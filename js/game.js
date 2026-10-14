@@ -987,7 +987,9 @@ function linhaVencedora(linha, recente) {
       derrotada: 'nunca escapou: derrotada'
     };
 
-    function mostrarCoroa(flag, tipo) {
+    /* `legenda` sobrepoe o texto padrao do tipo (a campea das rodadas conta
+       quantas venceu, por exemplo) sem precisar de um tipo novo. */
+    function mostrarCoroa(flag, tipo, legenda) {
       if (el.coroa) {
         el.coroa.hidden = false;
         if (el.coroa.setAttribute) el.coroa.setAttribute('data-tipo', tipo);
@@ -1003,12 +1005,44 @@ function linhaVencedora(linha, recente) {
         el.coroaIcone.appendChild(img);
       }
       if (el.coroaNome) el.coroaNome.textContent = Bandeiras.nome(flag);
-      if (el.coroaLegenda) el.coroaLegenda.textContent = LEGENDAS[tipo] || '';
+      if (el.coroaLegenda) el.coroaLegenda.textContent = legenda || LEGENDAS[tipo] || '';
     }
 
     function esconderCoroa() {
       if (estado.coroaTimer) { clearTimeout(estado.coroaTimer); estado.coroaTimer = null; }
       if (el.coroa) el.coroa.hidden = true;
+    }
+
+    /* Campea de uma partida por rodadas. So' faz sentido quando as vencedoras
+       voltam (a mesma bandeira pode vencer mais de uma vez) e no modo em que
+       uma bandeira VENCE a rodada — na eliminacao o mural marca quem saiu, nao
+       quem ganhou, e nao ha' titulo a defender. E' campea quem venceu MAIS
+       rodadas que todas as outras, com pelo menos duas: um empate no topo nao
+       elege ninguem. */
+    function campeaDasRodadas() {
+      if (!CFG.vencedorasVoltam) return null;
+      if (CFG.modo === 'eliminacao') return null;
+
+      var contagem = {};
+      var flags = {};
+      var ordem = [];
+      for (var i = 0; i < estado.vencidas.length; i++) {
+        var f = estado.vencidas[i].flag;
+        if (!f || f.id == null) continue;
+        if (contagem[f.id] == null) { contagem[f.id] = 0; flags[f.id] = f; ordem.push(f.id); }
+        contagem[f.id] += 1;
+      }
+
+      var melhor = null;
+      var melhorN = 0;
+      var empate = false;
+      for (var j = 0; j < ordem.length; j++) {
+        var n = contagem[ordem[j]];
+        if (n > melhorN) { melhorN = n; melhor = ordem[j]; empate = false; }
+        else if (n === melhorN) { empate = true; }
+      }
+      if (!melhor || empate || melhorN < 2) return null;
+      return { flag: flags[melhor], vitorias: melhorN };
     }
 
     /* fim da partida: a coroa da ultima onda fica na tela e o app e' avisado uma
@@ -1018,6 +1052,22 @@ function linhaVencedora(linha, recente) {
       if (estado.fim) return;
       estado.fim = true;
       var dados = { ondas: estado.vencidas.length, motivo: motivo, modo: CFG.modo };
+
+      /* acabou o limite de rodadas: se uma bandeira venceu mais rodadas que as
+         outras (e as vencedoras voltam), ela e' a campea da partida e a coroa
+         passa a contar as rodadas dela. Sem campea, fica a coroa da ultima
+         rodada como esta'. */
+      if (motivo === 'rodadas') {
+        var campeaR = campeaDasRodadas();
+        if (campeaR) {
+          dados.flag = campeaR.flag;
+          dados.tipo = 'campea';
+          dados.vitorias = campeaR.vitorias;
+          if (estado.coroaTimer) { clearTimeout(estado.coroaTimer); estado.coroaTimer = null; }
+          mostrarCoroa(campeaR.flag, 'campea',
+            'venceu ' + campeaR.vitorias + ' de ' + estado.vencidas.length + ' rodadas: campeã');
+        }
+      }
 
       /* acabaram as bandeiras sem marca: a que sobrou fecha a partida. Na
          eliminacao ela sobreviveu a todas as rodadas (campea); no outro modo ela

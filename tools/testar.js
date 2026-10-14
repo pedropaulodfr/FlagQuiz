@@ -1450,6 +1450,11 @@ function sandboxDoApp() {
   s.FlagQuiz.criarJogo = function (el) {
     const j = criarJogo(el);
     j.__sb = s;
+    /* guarda os ouvintes registados pelo app para poder disparar um evento
+       do motor sem tocar no codigo de producao (ex.: testar o aviso de fim) */
+    j.__eventos = {};
+    const registar = j.on;
+    j.on = function (evento, fn) { j.__eventos[evento] = fn; return registar.call(j, evento, fn); };
     s.__jogo = j;
     return j;
   };
@@ -1930,6 +1935,136 @@ teste('modo "ultima" sem repeticao: na ultima rodada restam duas e quem nao venc
   const todas = [v1.id, v2.id, s.fins[0].flag.id].sort();
   igual(new Set(todas).size, 3, 'duas vencedoras diferentes e uma perdedora');
   igual(jogo.estado.onda, 2, 'nao comecou uma rodada 3');
+});
+
+/* ---------- campea ao fim das rodadas ---------- */
+
+teste('fim por rodadas: a bandeira que mais venceu (e voltou) e a campea', () => {
+  const coroa = criarElemento('div');
+  const legenda = criarElemento('div');
+  const nome = criarElemento('div');
+  const s = arenaDe(MANIFEST.slice(0, 4), 1, {
+    coroa, coroaLegenda: legenda, coroaNome: nome, coroaIcone: criarElemento('div')
+  });
+  const { jogo } = s;
+  const fins = [];
+  jogo.on('fim', d => fins.push(d));
+  jogo.CFG.rodadas = 3;
+  /* sem velocidade minima nem base, so a bandeira enfileirada se mexe: o
+     vencedor de cada rodada nao depende de quem sobrou derivar ate a abertura */
+  jogo.CFG.velocidadeMin = 0;
+  jogo.CFG.velocidade = 0;
+
+  /* a campea volta na frente a cada rodada, entao fecharOnda (que marca a
+     primeira da arena) coroa sempre a mesma bandeira */
+  const v1 = fecharOnda(jogo);
+  anda(jogo, CFG.duracaoCoroa + 100);
+  const v2 = fecharOnda(jogo);
+  anda(jogo, CFG.duracaoCoroa + 100);
+  const v3 = fecharOnda(jogo);
+  anda(jogo, CFG.duracaoCoroa + 100);
+
+  igual(v1.id, v2.id, 'a vencedora volta na rodada seguinte');
+  igual(v2.id, v3.id, 'e vence a terceira tambem');
+  igual(fins.length, 1, 'avisou o fim uma vez so');
+  igual(fins[0].motivo, 'rodadas', 'acabou pelo limite de rodadas');
+  igual(fins[0].tipo, 'campea', 'a que mais venceu e a campea');
+  igual(fins[0].flag.id, v1.id, 'a campea e a das tres rodadas');
+  igual(fins[0].vitorias, 3, 'tres rodadas vencidas');
+
+  igual(coroa.atributos['data-tipo'], 'campea', 'a coroa fica dourada de campea');
+  igual(nome.textContent, s.Bandeiras.nome(v1), 'a coroa mostra a campea');
+  verdadeiro(legenda.textContent.indexOf('campeã') !== -1, 'a legenda diz campea: ' + legenda.textContent);
+  verdadeiro(legenda.textContent.indexOf('3') !== -1, 'a legenda conta as rodadas: ' + legenda.textContent);
+});
+
+teste('fim por rodadas sem lider: nenhuma venceu mais que as outras, sem campea', () => {
+  const s = arenaPequena(6);
+  const { jogo } = s;
+  jogo.CFG.rodadas = 3;
+  jogo.CFG.velocidadeMin = 0;
+  jogo.CFG.velocidade = 0;
+
+  /* cada rodada fecha com uma bandeira diferente: todas com uma vitoria, empate */
+  const vistos = new Set();
+  for (let r = 0; r < 3; r++) {
+    const alvo = jogo.estado.lutadores.find(l => !l.escapando && !vistos.has(l.flag.id));
+    enfileirarNaSaida(jogo, alvo, { vel: 80 });
+    anda(jogo, 1500);
+    vistos.add(alvo.flag.id);
+    anda(jogo, CFG.duracaoCoroa + 100);
+  }
+
+  igual(vistos.size, 3, 'tres bandeiras diferentes venceram');
+  igual(s.fins.length, 1, 'avisou o fim');
+  igual(s.fins[0].motivo, 'rodadas', 'acabou pelo limite de rodadas');
+  falso(s.fins[0].flag, 'empate no topo nao elege campea');
+  falso(s.fins[0].tipo, 'nem tipo de campea');
+});
+
+teste('fim por rodadas na eliminacao: nao ha campea por rodadas', () => {
+  const s = arenaPequena(6);
+  const { jogo } = s;
+  jogo.CFG.modo = 'eliminacao';
+  jogo.CFG.vencedorasVoltam = false;
+  jogo.CFG.rodadas = 3;
+  jogo.CFG.velocidadeMin = 0;
+  jogo.CFG.velocidade = 0;
+
+  for (let r = 0; r < 3; r++) {
+    fecharOnda(jogo);
+    anda(jogo, CFG.duracaoCoroa + 100);
+  }
+
+  igual(s.fins.length, 1, 'avisou o fim');
+  igual(s.fins[0].motivo, 'rodadas', 'acabou pelo limite de rodadas');
+  falso(s.fins[0].flag, 'a eliminacao marca quem saiu: nao ha campea por rodadas');
+});
+
+teste('fim por rodadas no modo "ultima": a campea tambem e coroada', () => {
+  const s = arenaPequena(2);
+  const { jogo } = s;
+  const e = jogo.estado;
+  jogo.CFG.modo = 'ultima';
+  jogo.CFG.rodadas = 2;
+  jogo.CFG.velocidadeMin = 0;
+  jogo.CFG.velocidade = 0;
+
+  const centro = (l) => { l.x = e.cx; l.y = e.cy; l.vx = 0; l.vy = 0; };
+
+  /* rodada 1: a segunda bandeira foge, a primeira fica e vence */
+  const a = e.lutadores[0];
+  enfileirarNaSaida(jogo, e.lutadores[1], { vel: 200 });
+  centro(a);
+  verdadeiro(ateVitoria(jogo), 'rodada 1 fechou');
+  igual(jogo.estado.campeao.id, a.flag.id, 'a que sobrou venceu a rodada');
+  anda(jogo, CFG.duracaoCoroa + 100);
+
+  /* rodada 2: a campea volta; empurra a outra para fora e ela vence de novo */
+  const outra = jogo.estado.lutadores.find(l => l.flag.id !== a.flag.id);
+  enfileirarNaSaida(jogo, outra, { vel: 200 });
+  centro(a);
+  verdadeiro(ateVitoria(jogo), 'rodada 2 fechou');
+  anda(jogo, CFG.duracaoCoroa + 100);
+
+  igual(s.fins.length, 1, 'avisou o fim');
+  igual(s.fins[0].motivo, 'rodadas', 'acabou pelo limite de rodadas');
+  igual(s.fins[0].tipo, 'campea', 'a que venceu as duas e a campea');
+  igual(s.fins[0].flag.id, a.flag.id, 'a campea do modo ultima');
+  igual(s.fins[0].vitorias, 2, 'venceu as duas rodadas');
+});
+
+teste('o app anuncia a campea ao fim das rodadas', () => {
+  const s = sandboxDoApp();
+  const fim = s.__jogo.__eventos.fim;
+  verdadeiro(fim, 'o app registou o ouvinte de fim');
+
+  fim({ motivo: 'rodadas', ondas: 3, modo: 'vencedora', flag: MANIFEST[0], tipo: 'campea', vitorias: 2 });
+  igual(s.__porId.get('aviso-titulo').textContent, 'Campeã: ' + MANIFEST[0].nome, 'titulo com a campea');
+  verdadeiro(s.__porId.get('aviso-texto').textContent.indexOf('2 de 3') !== -1, 'texto conta as rodadas: ' + s.__porId.get('aviso-texto').textContent);
+
+  fim({ motivo: 'rodadas', ondas: 3, modo: 'vencedora' });
+  igual(s.__porId.get('aviso-titulo').textContent, 'Fim das rodadas', 'sem campea mantem o aviso antigo');
 });
 
 teste('o esquema oferece os tres modos e o app descreve o novo', () => {

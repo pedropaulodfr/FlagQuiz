@@ -651,6 +651,8 @@
       } else {
         cartao('Derrotada: ' + quem, 'Foi a única que nunca escapou (' + d.ondas + ' rodadas). Aperte R para recomeçar.', 0);
       }
+    } else if (d.motivo === 'rodadas' && d.flag) {
+      cartao('Campeã: ' + Bandeiras.nome(d.flag), 'Venceu ' + d.vitorias + ' de ' + d.ondas + ' rodadas. Aperte R para recomeçar.', 0);
     } else if (d.motivo === 'rodadas') {
       cartao('Fim das rodadas', d.ondas + (d.ondas === 1 ? ' rodada jogada' : ' rodadas jogadas') + '. Aperte R para recomeçar.', 0);
     } else {

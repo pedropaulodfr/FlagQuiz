@@ -271,7 +271,7 @@
       chave: 'rodadas',
       grupo: 'partida',
       rotulo: 'Número de rodadas',
-      ajuda: 'Quantas rodadas a partida tem. Ao fim da ultima, a coroa fica na tela e aparece o aviso de fim; R recomeca. 0 = sem limite.',
+      ajuda: 'Quantas rodadas a partida tem. Ao fim da ultima, a coroa fica na tela e aparece o aviso de fim; R recomeca. Com "Vencedoras voltam às rodadas" ligado, a bandeira que vencer mais rodadas (ao menos duas) é anunciada campeã. 0 = sem limite.',
       zero: 'Sem limite',
       padrao: 0, min: 0, max: 100, passo: 1, casas: 0, sufixo: ''
     },
