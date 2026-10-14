@@ -214,6 +214,21 @@
       padrao: 'nenhum'
     },
     {
+      chave: 'efeitoAnel',
+      grupo: 'arena',
+      tipo: 'opcao',
+      rotulo: 'Efeito do anel',
+      ajuda: 'Animação decorativa sobre o anel da arena. Nenhum e o padrao: o anel fica como sempre foi. Brilho pulsante faz o contorno respirar; Rastro giratório põe um arco de luz a acompanhar o giro do portão; Faíscas orbitando acendem pontos que dão a volta no anel; Cor em movimento passeia a matiz do anel. So desenho: nao muda a fisica nem a abertura.',
+      opcoes: [
+        { valor: 'nenhum', texto: 'Nenhum' },
+        { valor: 'brilho', texto: 'Brilho pulsante' },
+        { valor: 'rastro', texto: 'Rastro giratório' },
+        { valor: 'faiscas', texto: 'Faíscas orbitando' },
+        { valor: 'cor', texto: 'Cor em movimento' }
+      ],
+      padrao: 'nenhum'
+    },
+    {
       chave: 'muralPosicao',
       grupo: 'placar',
       tipo: 'opcao',
@@ -602,6 +617,11 @@
 
     /* o tema e' so' um atributo no <html>; o CSS faz o resto (styles.css, "temas visuais") */
     if (el.raiz && el.raiz.setAttribute) el.raiz.setAttribute('data-tema', c.tema);
+
+    /* o efeito do anel tambem e' so' um atributo no <html>: o CSS desenha nos
+       pseudo-elementos do .arena (ver styles.css, "efeito do anel"). Nenhum nao
+       casa nenhuma regra, por isso o padrao nao pinta nada. */
+    if (el.raiz && el.raiz.setAttribute) el.raiz.setAttribute('data-efeito-anel', c.efeitoAnel);
 
     varCss(el.raiz, '--anel-raio', c.anel + '%');
     varCss(el.raiz, '--arena-escala', String(c.arena));

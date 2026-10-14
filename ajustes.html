@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230b1020'/><circle cx='16' cy='16' r='10' fill='none' stroke='%2338bdf8' stroke-width='2.5' stroke-dasharray='44 19'/><circle cx='25' cy='7' r='4' fill='%23f59e0b'/></svg>">
 <script>
 /* aplica o tema salvo antes da primeira pintura (a chave e' Config.CHAVE, de js/config.js) */
-try { var __c = JSON.parse(localStorage.getItem('flag-arena:config:v2')); if (__c && __c.tema) document.documentElement.setAttribute('data-tema', __c.tema); } catch (e) {}
+try { var __c = JSON.parse(localStorage.getItem('flag-arena:config:v2')); if (__c && __c.tema) document.documentElement.setAttribute('data-tema', __c.tema); if (__c && __c.efeitoAnel) document.documentElement.setAttribute('data-efeito-anel', __c.efeitoAnel); } catch (e) {}
 </script>
 </head>
 <body class="pagina-ajustes">
@@ -112,6 +112,18 @@ try { var __c = JSON.parse(localStorage.getItem('flag-arena:config:v2')); if (__
             <option value="tres-cruzes">Três cruzes giratórias</option>
           </select>
           <output class="config-valor" id="cfg-obstaculo-valor" for="cfg-obstaculo">Nenhum</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-efeitoAnel">Efeito do anel</label>
+          <select class="config-select" id="cfg-efeitoAnel">
+            <option value="nenhum">Nenhum</option>
+            <option value="brilho">Brilho pulsante</option>
+            <option value="rastro">Rastro giratório</option>
+            <option value="faiscas">Faíscas orbitando</option>
+            <option value="cor">Cor em movimento</option>
+          </select>
+          <output class="config-valor" id="cfg-efeitoAnel-valor" for="cfg-efeitoAnel">Nenhum</output>
         </div>
       </section>
 

@@ -114,6 +114,7 @@ const IDS_DA_TELA = [
   'cfg-som', 'cfg-som-valor',
   'cfg-modo', 'cfg-modo-valor',
   'cfg-obstaculo', 'cfg-obstaculo-valor',
+  'cfg-efeitoAnel', 'cfg-efeitoAnel-valor',
   'cfg-muralPosicao', 'cfg-muralPosicao-valor',
   'cfg-volume', 'cfg-volume-valor',
   'cfg-nomesVencedoras', 'cfg-nomesVencedoras-valor'
@@ -2155,12 +2156,52 @@ teste('Config aplica o tema no <html> e cai no Noite se o valor for invalido', (
   igual(sb.Config.normalizar({}).tema, 'noite', 'padrao');
 });
 
-teste('as duas paginas aplicam o tema salvo antes de pintar', () => {
+/* ---------- efeito do anel ---------- */
+
+teste('Config aplica o efeito do anel no <html> e cai em Nenhum se o valor for invalido', () => {
+  const sb = montarContexto(1);
+  rodar(sb, ['js/config.js']);
+  const raiz = criarElemento('html'); raiz.style = {};
+  sb.Config.aplicarNoCena({ efeitoAnel: 'brilho' }, { raiz });
+  igual(raiz.atributos['data-efeito-anel'], 'brilho', 'efeito aplicado');
+  sb.Config.aplicarNoCena({ efeitoAnel: 'cor' }, { raiz });
+  igual(raiz.atributos['data-efeito-anel'], 'cor', 'troca de efeito');
+  sb.Config.aplicarNoCena({ efeitoAnel: 'inexistente' }, { raiz });
+  igual(raiz.atributos['data-efeito-anel'], 'nenhum', 'valor invalido vira o padrao');
+  igual(sb.Config.normalizar({}).efeitoAnel, 'nenhum', 'padrao');
+});
+
+teste('cada efeito do anel tem desenho proprio e nenhum encosta no anel que gira', () => {
+  const sb = montarContexto(1);
+  rodar(sb, ['js/config.js']);
+  const campo = sb.Config.campo('efeitoAnel');
+  const efeitos = campo.opcoes.map(o => o.valor);
+  igual(efeitos[0], 'nenhum', 'Nenhum e a primeira opcao');
+  igual(campo.padrao, 'nenhum', 'Nenhum e o padrao');
+
+  const css = lidos['styles.css'].replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const e of efeitos) {
+    if (e === 'nenhum') continue;
+    verdadeiro(css.indexOf(':root[data-efeito-anel="' + e + '"]') !== -1, 'sem regra para o efeito ' + e);
+    /* o desenho vive nos pseudo-elementos do .arena, nunca no <svg> do anel */
+    verdadeiro(new RegExp(':root\\[data-efeito-anel="' + e + '"\\][^{]*\\.arena::').test(css),
+      'o efeito ' + e + ' nao desenha nos pseudo-elementos do .arena');
+  }
+  /* Nenhum nao pinta nada: nenhuma regra casa quando o valor e o padrao */
+  verdadeiro(css.indexOf(':root[data-efeito-anel="nenhum"]') === -1, 'Nenhum nao deve ter regra no CSS');
+
+  /* o efeito e' so' desenho: o anel que gira e a moldura continuam sem transform */
+  falso(/transform\s*:/.test(blocoCss(lidos['styles.css'], '.arena-anel-giro')), 'o anel que gira nao ganhou transform');
+  falso(/transform\s*:/.test(blocoCss(lidos['styles.css'], '.arena-anel')), 'o <svg> do anel nao ganhou transform');
+});
+
+teste('as duas paginas aplicam o tema e o efeito do anel salvos antes de pintar', () => {
   for (const arq of ['index.html', 'ajustes.html']) {
     const html = fs.readFileSync(path.join(raiz, arq), 'utf8');
     const cab = html.slice(0, html.indexOf('</head>'));
     verdadeiro(/localStorage\.getItem\('flag-arena:config:v2'\)/.test(cab), arq + ': le o tema no <head>');
     verdadeiro(/data-tema/.test(cab), arq + ': escreve data-tema no <head>');
+    verdadeiro(/data-efeito-anel/.test(cab), arq + ': escreve data-efeito-anel no <head>');
   }
   const sb = montarContexto(1);
   rodar(sb, ['js/config.js']);

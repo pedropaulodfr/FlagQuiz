@@ -346,7 +346,9 @@
     /* Cada obstaculo e' um disco (`circulo`) ou uma capsula (`barra`: segmento de
        meia-extensao `meia` com raio `r`). Medidas em fracao do lado da arena, a
        partir do centro, para valerem em qualquer tamanho. Todos ficam dentro de
-       ~0,22 do lado, deixando passagem folgada ate' o anel (que esta' a ~0,455). */
+       ~0,22 do lado, deixando passagem folgada ate' o anel (que esta' a ~0,455).
+       O `material` opcional (ex.: 'madeira') vira a classe `obstaculo--<material>`,
+       que o CSS usa para pintar o acabamento; sem ele fica o visual do tipo. */
     var OBSTACULOS = {
       nenhum: [],
       pino: [{ t: 'circulo', x: 0, y: 0, r: 0.075 }],
@@ -360,8 +362,8 @@
       })),
       barra: [{ t: 'barra', x: 0, y: 0, meia: 0.17, r: 0.028, ang: 0, gira: true }],
       cruz: [
-        { t: 'barra', x: 0, y: 0, meia: 0.17, r: 0.028, ang: 0, gira: true },
-        { t: 'barra', x: 0, y: 0, meia: 0.17, r: 0.028, ang: Math.PI / 2, gira: true }
+        { t: 'barra', x: 0, y: 0, meia: 0.17, r: 0.028, ang: 0, gira: true, material: 'madeira' },
+        { t: 'barra', x: 0, y: 0, meia: 0.17, r: 0.028, ang: Math.PI / 2, gira: true, material: 'madeira' }
       ],
       /* Tres cruzes (cada uma dois traços perpendiculares) em triangulo, cada
          uma girando em torno do proprio centro. Afastadas o bastante para nao se
@@ -372,8 +374,8 @@
         for (var i = 0; i < 3; i++) {
           var a = -Math.PI / 2 + i * 2 * Math.PI / 3;
           var x = Math.cos(a) * 0.17, y = Math.sin(a) * 0.17;
-          barras.push({ t: 'barra', x: x, y: y, meia: 0.06, r: 0.02, ang: 0, gira: true });
-          barras.push({ t: 'barra', x: x, y: y, meia: 0.06, r: 0.02, ang: Math.PI / 2, gira: true });
+          barras.push({ t: 'barra', x: x, y: y, meia: 0.06, r: 0.02, ang: 0, gira: true, material: 'madeira' });
+          barras.push({ t: 'barra', x: x, y: y, meia: 0.06, r: 0.02, ang: Math.PI / 2, gira: true, material: 'madeira' });
         }
         return barras;
       })()
@@ -409,7 +411,7 @@
         };
         if (el.obstaculos) {
           var d = document.createElement('div');
-          d.className = 'obstaculo obstaculo--' + m.t;
+          d.className = 'obstaculo obstaculo--' + m.t + (m.material ? ' obstaculo--' + m.material : '');
           var w = m.t === 'barra' ? 2 * (o.meia + o.r) : 2 * o.r;
           d.style.width = w + 'px';
           d.style.height = (2 * o.r) + 'px';

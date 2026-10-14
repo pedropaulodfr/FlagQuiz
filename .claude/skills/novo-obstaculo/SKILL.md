@@ -31,6 +31,10 @@ Campos comuns a toda forma:
 | `x`, `y` | deslocamento do centro da arena, **em fração do lado da arena** (não em px) |
 | `ang` | ângulo inicial em radianos (só faz sentido na `barra`) |
 | `gira` | `true` gira a barra a `CFG.obstaculoGiro` rad/s; ausente = parada |
+| `material` | opcional; acabamento visual: vira a classe `obstaculo--<material>` (ex.: `'madeira'`). Sem ele, fica o visual do `t` |
+
+Materiais de hoje: as **cruzes** (`cruz`, `tres-cruzes`) são `material: 'madeira'`; os
+**pinos** (`circulo`) e a **barra** ficam com o acabamento do próprio `t` (metal/haste).
 
 Uma **cruz** é só uma `barra` com `ang: 0` mais outra no mesmo `(x, y)` com
 `ang: Math.PI / 2`. Um **pino** é um `circulo`. Vários pinos/barras = vários itens na
@@ -75,8 +79,9 @@ Tudo em `js/game.js`:
   obstáculo é *definido*.
 - **`montarObstaculos()`** — chamado a cada `definirTamanho` (mudança de ajuste e
   redimensionamento). Converte fração → px (`* estado.lado`), cria o `<div>` com a
-  classe `obstaculo obstaculo--<t>`, guarda o giro já acumulado (`estado.giroObstaculos`)
-  e preenche `estado.obstaculos`. Largura = `2·(meia+r)` na barra ou `2·r` no disco.
+  classe `obstaculo obstaculo--<t>` (mais `obstaculo--<material>`, se houver `material`),
+  guarda o giro já acumulado (`estado.giroObstaculos`) e preenche `estado.obstaculos`.
+  Largura = `2·(meia+r)` na barra ou `2·r` no disco.
 - **`pintarObstaculos()`** — escreve `transform: translate(x,y) rotate(ang)`.
 - **`girarObstaculos(dt)`** — soma `CFG.obstaculoGiro·dt` em `ang` de toda forma com
   `gira: true`. **Todas** as formas giratórias giram juntas e à mesma velocidade.
@@ -88,10 +93,13 @@ Tudo em `js/game.js`:
 - **`dentroDeObstaculo(x, y, folga)`** — usado no `criarLutador` para **ninguém nascer
   dentro** de um obstáculo. É automático: qualquer forma nova já é respeitada.
 
-O visual sai de variáveis CSS: `.obstaculo`, `.obstaculo--circulo`,
-`.obstaculo--barra` em `styles.css` (cores por tema em `--obstaculo-1`, `--obstaculo-2`,
-`--obstaculo-borda`, `--obstaculo-glow-rgb`). **Só crie uma classe `obstaculo--<t>` nova
-se criar um `t` novo**; reaproveitar `circulo`/`barra` não pede CSS.
+O visual sai de variáveis CSS: `.obstaculo` (base), `.obstaculo--circulo` (pino de metal),
+`.obstaculo--barra` (haste) e `.obstaculo--madeira` (cruzes) em `styles.css`. As cores
+vêm de tokens de tema: `--obstaculo-1`, `--obstaculo-2`, `--obstaculo-borda`,
+`--obstaculo-glow-rgb` (genéricos) e `--madeira-1/2/borda`, `--metal-1/2/borda`
+(materiais). **Só crie uma classe `obstaculo--<t>` nova se criar um `t` novo**;
+reaproveitar `circulo`/`barra` não pede CSS. Um `material` novo só precisa de CSS se
+for um acabamento novo; reaproveitar `madeira` não exige nada.
 
 ## 4. Checklist (faça nesta ordem)
 
@@ -149,7 +157,10 @@ cada item tem `t, x, y, r, meia, ang, gira` em **px** do lado atual).
   exagere no tamanho a ponto de a arena virar um bloco.
 - **Nada de segundo laço, segunda física ou estado paralelo.** Reaproveite
   `estado.obstaculos`, `giroObstaculos`, `maisProximo`, `colidirObstaculos`.
-- **Cor de tema só em variáveis CSS.** Não escreva cor à mão (há teste que falha).
+- **Cor de tema só em variáveis CSS.** Não escreva cor à mão (há teste que falha). Se
+  acrescentar um token novo (ex.: uma cor de material), defina-o **no `:root` e em todos
+  os blocos `:root[data-tema="..."]`**: um teste exige que todo tema defina exactamente o
+  mesmo conjunto de tokens.
 - **Textos de valores nos Ajustes começam com maiúscula** (há teste que varre todos).
 - Comentários de código seguem o estilo do arquivo (português, em geral **sem** acento);
   textos para o jogador em português do Brasil **com** acentos.
@@ -176,6 +187,12 @@ cada item tem `t, x, y, r, meia, ang, gira` em **px** do lado atual).
   para obstáculos isso raramente importa, mas use `ateVitoria` para "a onda fecha".
 - No Windows, escrever HTML em modo texto pode virar CRLF. Prefira
   `node tools/sincronizar-ajustes.js` a copiar trechos entre `index.html` e `ajustes.html`.
+- Novo token de cor só no `:root` deixa os outros temas sem ele e o teste de temas
+  falha. Acrescente o mesmo token aos cinco blocos (Noite/`:root`, claro, estadio,
+  por-do-sol, neon), com os valores que fizerem sentido em cada um.
+- Cruzes e barra compartilham o tipo `barra` (mesma classe `obstaculo--barra`). Para dar
+  acabamentos diferentes sem criar um `t` novo, use `material` (a classe vem depois e
+  sobrepõe-se, desde que declarada **depois** de `.obstaculo--barra` no CSS).
 
 ## 8. Como entregar a resposta ao usuário
 

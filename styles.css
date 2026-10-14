@@ -37,6 +37,13 @@
   --obstaculo-2: #26324f;
   --obstaculo-borda: #7f95c8;
   --obstaculo-glow-rgb: 99, 102, 241;
+  /* materiais dos obstaculos: madeira nas cruzes, metal nos pinos e na barra */
+  --madeira-1: #b07a49;
+  --madeira-2: #6d4423;
+  --madeira-borda: #3d2714;
+  --metal-1: #d3dbe6;
+  --metal-2: #7b879b;
+  --metal-borda: #eef3fa;
   --efeito: #7dd3fc;               /* onda de choque na parede */
   --efeito-2: #38bdf8;
   --efeito-rgb: 125, 211, 252;
@@ -577,8 +584,44 @@ body {
   box-shadow: 0 0 14px rgba(var(--obstaculo-glow-rgb), .35), inset 0 0 8px rgba(0, 0, 0, .35);
   box-sizing: border-box;
 }
-.obstaculo--circulo { border-radius: 50%; }
-.obstaculo--barra { border-radius: 999px; }
+/* Pinos (circulos): metal polido — realce no alto-esquerda e sombra em baixo. */
+.obstaculo--circulo {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .8), rgba(255, 255, 255, 0) 46%),
+    linear-gradient(150deg, var(--metal-1), var(--metal-2));
+  border-color: var(--metal-borda);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, .5),
+    0 0 14px rgba(var(--obstaculo-glow-rgb), .3),
+    inset 0 -4px 8px rgba(0, 0, 0, .5),
+    inset 0 3px 4px rgba(255, 255, 255, .6);
+}
+
+/* Barra: haste cilindrica; a faixa clara no meio da' o relevo de um tubo. */
+.obstaculo--barra {
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--metal-2), var(--metal-1) 45%, var(--metal-2));
+  border-color: var(--metal-borda);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, .5),
+    0 0 12px rgba(var(--obstaculo-glow-rgb), .3),
+    inset 0 0 6px rgba(0, 0, 0, .35);
+}
+
+/* Cruzes: madeira, com veios ao longo do traço. Declarada por ultimo, sobrepoe-se
+   a regra da barra (mesma especificidade) mantendo o formato de capsula. */
+.obstaculo--madeira {
+  background:
+    repeating-linear-gradient(180deg, rgba(0, 0, 0, .16) 0 3px, rgba(0, 0, 0, 0) 3px 8px),
+    linear-gradient(160deg, var(--madeira-1), var(--madeira-2));
+  border-color: var(--madeira-borda);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, .5),
+    0 0 10px rgba(var(--obstaculo-glow-rgb), .18),
+    inset 0 -6px 8px rgba(0, 0, 0, .35),
+    inset 0 4px 5px rgba(255, 255, 255, .22);
+}
 
 /* ---------------------------------------------------------------- */
 /* lutadores                                                        */
@@ -688,6 +731,89 @@ body {
 @keyframes efeito-clarao {
   from { transform: scale(.4); opacity: 1; }
   to   { transform: scale(1.8); opacity: 0; }
+}
+
+/* ---------------------------------------------------------------- */
+/* efeito do anel (Ajustes > Arena > Efeito do anel)                  */
+/* ---------------------------------------------------------------- */
+
+/* O efeito e' so' desenho e vive nos pseudo-elementos do .arena, NUNCA no
+   <svg class="arena-anel"> nem no <circle class="arena-anel-giro">: esses
+   nao podem ganhar `transform` (a rotacao do anel e' do <g id="arena-giro">,
+   com o centro escrito em unidades do viewBox). Um pseudo-elemento a parte
+   roda a' vontade sem mexer no eixo do anel.
+
+   A caixa acompanha o raio do anel (`--anel-diametro`), por isso qualquer
+   valor de "Raio do anel" nos Ajustes mantem o desenho alinhado. Com a opcao
+   Nenhum (padrao) nenhuma regra casa e nada e' pintado. As cores saem dos
+   tokens de tema --efeito/--efeito-2, por isso cada tema tem o seu tom. */
+
+:root[data-efeito-anel="brilho"] .arena::before,
+:root[data-efeito-anel="rastro"] .arena::before,
+:root[data-efeito-anel="faiscas"] .arena::before,
+:root[data-efeito-anel="faiscas"] .arena::after,
+:root[data-efeito-anel="cor"] .arena::before {
+  content: "";
+  position: absolute;
+  inset: calc((100% - var(--anel-diametro)) / 2);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* contorno que respira */
+:root[data-efeito-anel="brilho"] .arena::before {
+  border: 2px solid rgba(var(--efeito-rgb), .7);
+  box-shadow:
+    0 0 18px 2px rgba(var(--efeito-rgb), .55),
+    inset 0 0 18px 2px rgba(var(--efeito-2-rgb), .45);
+  animation: anel-brilho 2.6s ease-in-out infinite;
+}
+
+@keyframes anel-brilho {
+  0%, 100% { opacity: .25; }
+  50%      { opacity: .95; }
+}
+
+/* arco de luz que persegue o giro do portao */
+:root[data-efeito-anel="rastro"] .arena::before {
+  background: conic-gradient(from 0deg,
+    rgba(var(--efeito-2-rgb), 0) 0deg,
+    rgba(var(--efeito-2-rgb), 0) 200deg,
+    rgba(var(--efeito-rgb), .85) 320deg,
+    var(--efeito-2) 356deg,
+    #fff 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  animation: anel-rastro-giro 3.2s linear infinite;
+}
+
+/* dois pontos de luz dando a volta no anel */
+:root[data-efeito-anel="faiscas"] .arena::before,
+:root[data-efeito-anel="faiscas"] .arena::after {
+  animation: anel-rastro-giro 5s linear infinite;
+}
+:root[data-efeito-anel="faiscas"] .arena::before {
+  background: radial-gradient(circle 7px at 50% 0%, #fff 0%, var(--efeito) 60%, rgba(var(--efeito-2-rgb), 0) 100%);
+}
+:root[data-efeito-anel="faiscas"] .arena::after {
+  background: radial-gradient(circle 7px at 50% 100%, #fff 0%, var(--efeito) 60%, rgba(var(--efeito-2-rgb), 0) 100%);
+}
+
+@keyframes anel-rastro-giro { to { transform: rotate(360deg); } }
+
+/* a matiz do anel passeia pela roda de cores */
+:root[data-efeito-anel="cor"] .arena::before {
+  border: 3px solid var(--efeito);
+  box-shadow:
+    0 0 16px rgba(var(--efeito-rgb), .55),
+    inset 0 0 16px rgba(var(--efeito-2-rgb), .4);
+  animation: anel-cor 7s linear infinite;
+}
+
+@keyframes anel-cor {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
 }
 
 /* escapando: atravessa a abertura e some */
@@ -1498,6 +1624,12 @@ html:has(body.pagina-ajustes) { height: auto; }
   --obstaculo-2: #7388b3;
   --obstaculo-borda: #4a5f8c;
   --obstaculo-glow-rgb: 79, 70, 229;
+  --madeira-1: #a86f3e;
+  --madeira-2: #6a4220;
+  --madeira-borda: #3a2412;
+  --metal-1: #c7d0dd;
+  --metal-2: #6f7b8f;
+  --metal-borda: #f4f7fb;
   --efeito: #1c8fd6;
   --efeito-2: #0a74b8;
   --efeito-rgb: 28, 143, 214;
@@ -1533,6 +1665,12 @@ html:has(body.pagina-ajustes) { height: auto; }
   --obstaculo-2: #1f4d33;
   --obstaculo-borda: #86efac;
   --obstaculo-glow-rgb: 74, 222, 128;
+  --madeira-1: #a9814a;
+  --madeira-2: #5f4526;
+  --madeira-borda: #382a15;
+  --metal-1: #cdd8d0;
+  --metal-2: #6f7d76;
+  --metal-borda: #eaf3ec;
   --efeito: #bbf7d0;
   --efeito-2: #4ade80;
   --efeito-rgb: 187, 247, 208;
@@ -1568,6 +1706,12 @@ html:has(body.pagina-ajustes) { height: auto; }
   --obstaculo-2: #4d2340;
   --obstaculo-borda: #f9a8c9;
   --obstaculo-glow-rgb: 225, 29, 116;
+  --madeira-1: #b56b3c;
+  --madeira-2: #6e3320;
+  --madeira-borda: #401f10;
+  --metal-1: #e0d3cc;
+  --metal-2: #8a7570;
+  --metal-borda: #f7ece5;
   --efeito: #fed7aa;
   --efeito-2: #fb923c;
   --efeito-rgb: 254, 215, 170;
@@ -1603,6 +1747,12 @@ html:has(body.pagina-ajustes) { height: auto; }
   --obstaculo-2: #1b0f45;
   --obstaculo-borda: #ff2bd6;
   --obstaculo-glow-rgb: 255, 43, 214;
+  --madeira-1: #9a6b53;
+  --madeira-2: #5a3320;
+  --madeira-borda: #341b10;
+  --metal-1: #c9d2e6;
+  --metal-2: #727a9c;
+  --metal-borda: #e8ecff;
   --efeito: #9ffcff;
   --efeito-2: #22f5ff;
   --efeito-rgb: 159, 252, 255;
@@ -1621,6 +1771,8 @@ html:has(body.pagina-ajustes) { height: auto; }
   .lutador { transition: none; }
   .lutador--fugindo { transition: opacity .2s linear; }
   .efeitos { display: none; }
+  :root[data-efeito-anel] .arena::before,
+  :root[data-efeito-anel] .arena::after { animation: none; }
   .aviso-cartao { animation: none; }
   .vencedora--recente { animation: none; }
   .config-pagina { animation: none; }
