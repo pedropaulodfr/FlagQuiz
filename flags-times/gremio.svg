@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112" width="100" height="112">
+  <title>Grêmio</title>
+  <defs>
+    <clipPath id="mascara"><path d="M50 4 L94 16 V53 C94 84 73 102 50 108 C27 102 6 84 6 53 V16 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#mascara)">
+    <rect x="-40.00" y="-40.00" width="180.00" height="192.00" fill="#0d5eaf"/>
+    <rect x="-40.00" y="28.00" width="180.00" height="15.00" fill="#111111"/>
+    <rect x="-40.00" y="43.00" width="180.00" height="15.00" fill="#111111"/>
+    <rect x="-40.00" y="58.00" width="180.00" height="15.00" fill="#111111"/>
+    <circle cx="50.00" cy="48.00" r="21.00" fill="none" stroke="#ffffff" stroke-width="3.00"/>
+    <text x="50.00" y="48.00" font-family="Arial, Helvetica, sans-serif" font-size="8.00" font-weight="700" fill="#0d5eaf" stroke="#ffffff" stroke-width="1.28" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">GREMIO</text>
+    <text x="50.00" y="90.00" font-family="Arial, Helvetica, sans-serif" font-size="7.00" font-weight="700" fill="#ffffff" stroke="#111111" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">1903</text>
+  </g>
+  <path d="M50 4 L94 16 V53 C94 84 73 102 50 108 C27 102 6 84 6 53 V16 Z" fill="none" stroke="#0d5eaf" stroke-width="5" stroke-linejoin="round"/>
+</svg>

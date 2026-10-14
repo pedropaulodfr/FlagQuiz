@@ -1,0 +1,1627 @@
+/* =====================================================================
+   Flag Arena
+   ===================================================================== */
+
+:root {
+  --fundo: #070b16;
+  --fundo-2: #0b1222;
+  --superficie: #121a2e;
+  --borda: #223052;
+  --texto: #e8eefc;
+  --texto-fraco: #8494b8;
+  --destaque: #38bdf8;
+  --indigo: #6366f1;
+  --fuga: #f59e0b;
+  --vitoria: #34d399;
+
+  /* ---- tokens de TEMA ----------------------------------------------------
+     Tudo o que muda de um tema para outro mora aqui. Os temas sao blocos
+     `:root[data-tema="..."]` no fim desta secao, que redefinem este mesmo
+     conjunto; o de fabrica (Noite) e' este. O app escreve `data-tema` no <html>
+     (ver Config.aplicarNoCena). Nada fora destas variaveis deve ter cor de tema
+     escrita a mao. As variaveis `-rgb` guardam so' "r, g, b" para poderem ser
+     usadas com transparencia: rgba(var(--vidro-rgb), .7). */
+  --esquema: dark;                 /* color-scheme: controles nativos (lista do <select>) */
+  --halo: #14203a;                 /* clarao no topo do fundo */
+  --vidro-rgb: 10, 16, 32;         /* cabecalho, rodape, paineis translucidos */
+  --veu: rgba(4, 8, 18, .74);      /* pano por tras do painel de Ajustes */
+  --trilho-rgb: 10, 18, 36;        /* disco de fundo da arena */
+  --halo-botao-rgb: 5, 9, 20;      /* sombra atras do botao Iniciar */
+  --iniciar-1: #a5e4ff;            /* gradiente do botao Iniciar */
+  --iniciar-2: #38bdf8;
+  --iniciar-3: #6366f1;
+  --iniciar-texto: #03121f;
+  --iniciar-glow-rgb: 56, 189, 248;
+  --iniciar-glow2-rgb: 99, 102, 241;
+  --obstaculo-1: #475a85;
+  --obstaculo-2: #26324f;
+  --obstaculo-borda: #7f95c8;
+  --obstaculo-glow-rgb: 99, 102, 241;
+  --efeito: #7dd3fc;               /* onda de choque na parede */
+  --efeito-2: #38bdf8;
+  --efeito-rgb: 125, 211, 252;
+  --efeito-2-rgb: 56, 189, 248;
+  --aviso-bg: rgba(28, 18, 6, .95);
+  --aviso-texto: #fde68a;
+
+  /* Raio do circulo onde as bandeiras orbitam. O anel que gira e' desenhado no
+     SVG com r="182" dentro de um viewBox de 400, ou seja, exactamente estes
+     45.5%. Tem de casar com CFG.raioBorda (182/400) do motor, que e' quem
+     calcula estado.R e estado.raioJogador. O diametro correspondente e' o que
+     da a largura do painel .coroa. */
+  --anel-raio: 45.5%;
+  --anel-diametro: calc(var(--anel-raio) * 2);
+
+  /* Tamanho do circulo, em duas pecas para o `--arena-escala` ter onde caber.
+
+     `--arena-base` e' o diametro do anel na escala 1. `--arena-max` e' esse
+     base pelo multiplicador que a pagina de ajustes escreve.
+
+     O base e' min(56vmin, 560px) e nao o antigo 74vmin/640px porque o
+     multiplicador vai ate 1.6: um base de 640px daria 1024px no maximo, e o
+     palco de uma tela 1080p tem ~970px de altura util — a arena estourava a
+     viewport e o `overflow: hidden` do body cortava o anel pela metade. Com
+     560px o topo do intervalo (896px) ainda cabe.
+
+     O `--lutador` NAO esta aqui: ele e' derivado de `--arena-escala` em .arena,
+     porque a bandeira precisa escalar junto com o circulo (ver o comentario
+     la). Deixar os dois em px fixos deixaria a folga do anel furada. */
+  --arena-escala: 1;
+  --bandeira-escala: 1;
+  --bandeira-prop: .7;
+  --bandeira-raio: 3px;
+  --arena-base: min(56vmin, 560px);
+  --arena-max: calc(var(--arena-base) * var(--arena-escala));
+}
+
+* { box-sizing: border-box; }
+
+/* Barras de rolagem do tema: finas, com o polegar na cor de destaque e a trilha
+   quase invisivel. As propriedades padrao funcionam no Chrome/Edge 121+, Firefox e
+   Safari recentes; o bloco -webkit- cobre os navegadores mais antigos (nos novos
+   ele e' ignorado de proposito: quando `scrollbar-color` existe, ele manda). */
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: var(--destaque) rgba(var(--vidro-rgb), .35);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--destaque) rgba(var(--vidro-rgb), .35);
+}
+
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: rgba(var(--vidro-rgb), .35); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--destaque);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--indigo); background-clip: padding-box; }
+}
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 700px at 50% -10%, var(--halo) 0%, transparent 60%),
+    linear-gradient(180deg, var(--fundo-2), var(--fundo));
+  color: var(--texto);
+  font: 15px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.visualmente-oculto {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------- */
+/* cabecalho                                                        */
+/* ---------------------------------------------------------------- */
+
+.topo {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px clamp(12px, 3vw, 28px);
+  border-bottom: 1px solid var(--borda);
+  background: rgba(var(--vidro-rgb), .72);
+  backdrop-filter: blur(8px);
+}
+
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.marca-anel {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid var(--destaque);
+  border-right-color: transparent;
+  animation: girar-marca 3.2s linear infinite;
+}
+
+@keyframes girar-marca { to { transform: rotate(360deg); } }
+
+/* ---------------------------------------------------------------- */
+/* mural das vencedoras                                             */
+/* ---------------------------------------------------------------- */
+
+/* Fica no cabecalho, entre a marca e o contador de onda: e' o unico espaco
+   da tela que nunca compete com a arena, e o olho ja vai la depois de olhar
+   para cima. */
+.vencedoras {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.vencedoras-rotulo {
+  flex: none;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+  white-space: nowrap;
+}
+
+/* quantas ondas ja foram coroadas no total */
+.vencedoras-total {
+  margin-left: 4px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--vitoria);
+}
+
+.vencedoras-lista {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  /* o corte e' esmaecido, nao a seco: sem isto um chip cortado na beira da
+     tela parece defeito de layout */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+}
+
+.vencedora {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 3px 8px 3px 4px;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: var(--superficie);
+  font-size: clamp(10px, 1.5vmin, 12.5px);
+  white-space: nowrap;
+  max-width: 17ch;
+}
+
+.vencedora img {
+  flex: none;
+  width: 23px;
+  height: 15px;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .14);
+}
+
+.vencedora-nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* placado de quem venceu mais de uma onda */
+.vencedora-vezes {
+  flex: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--vitoria);
+}
+
+/* a ultima a entrar: a unica que anima, porque e' a unica que acabou de mudar */
+.vencedora--recente {
+  border-color: var(--vitoria);
+  box-shadow: 0 0 12px rgba(52, 211, 153, .3);
+  animation: entrar-vencedora .4s cubic-bezier(.2, .9, .25, 1.2) both;
+}
+
+@keyframes entrar-vencedora {
+  from { opacity: 0; transform: translateX(10px) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+
+.vencedoras-resto {
+  flex: none;
+  font-size: clamp(9px, 1.4vmin, 11px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-fraco);
+  white-space: nowrap;
+}
+
+.vencedoras-vazia {
+  font-size: clamp(10px, 1.5vmin, 12.5px);
+  font-style: italic;
+  color: var(--texto-fraco);
+  white-space: nowrap;
+}
+
+.vencedoras-vazia[hidden] { display: none; }
+
+.hud {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2.4vw, 26px);
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+
+.hud-rotulo {
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+.hud-valor {
+  font-size: clamp(15px, 2.4vmin, 21px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------- */
+/* palco: contador | arena | contador                              */
+/* ---------------------------------------------------------------- */
+
+.palco {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(74px, 11vw) auto minmax(74px, 11vw);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.6vw, 20px);
+  padding: clamp(8px, 2vh, 22px) clamp(8px, 2vw, 22px);
+  position: relative;
+}
+
+.contador {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+  min-width: 0;
+}
+
+.contador-rotulo {
+  font-size: clamp(9px, 1.5vmin, 11px);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+.contador-valor {
+  font-size: clamp(34px, 9vmin, 74px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.contador--saida .contador-valor { color: var(--fuga); }
+.contador--resto .contador-valor { color: var(--destaque); }
+
+/* pulso quando o numero muda */
+.contador-valor.pulsa { animation: pulso .42s ease-out; }
+
+@keyframes pulso {
+  0%   { transform: scale(1); }
+  32%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+.contador-nota {
+  margin: 2px 0 0;
+  font-size: clamp(9px, 1.4vmin, 11px);
+  line-height: 1.35;
+  color: var(--texto-fraco);
+}
+
+.contador-fantasmas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.contador-fantasmas img {
+  width: clamp(12px, 2vmin, 17px);
+  border-radius: 2px;
+  opacity: .3;
+  filter: grayscale(1);
+}
+
+/* ---------------------------------------------------------------- */
+/* arena                                                            */
+/* ---------------------------------------------------------------- */
+
+.arena {
+  position: relative;
+  width: var(--arena-max);
+  height: var(--arena-max);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  touch-action: none;
+
+  /* A bandeira escala junto com o circulo, e nao num px fixo.
+
+     O motor mede tudo em fracao do lado: CFG.margemLutador (0.075) e' a folga
+     entre o anel e a borda da bandeira, CFG.diametroLutador (0.11) e' o minimo
+     de colisao. Um `--lutador` fixo deixaria, na escala 1.6, um bloco maior que
+     a folga — e as bandeiras comecariam a rocar a parede do anel.
+
+     `--lutador-base` guardado a parte que NAO depende do ajuste, para o
+     `--lutador` poder multiplicar sem se referenciar a si mesmo: um
+     `--lutador: calc(var(--lutador) * ...)` seria um ciclo, o navegador
+     invalidaria a propriedade e o `width` das bandeiras ficaria sem valor.
+
+     Na escala 1 o resultado e' exatamente o `--lutador` de antes — o padrao
+     aparece exatamente como aparecia. */
+  --lutador-base: clamp(34px, 6.4vmin, 62px);
+  --lutador: calc(var(--lutador-base) * var(--arena-escala));
+}
+
+.arena-anel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  /* Este elemento NAO roda e NAO tem transform. Ele serve so de moldura: o
+     <svg> cobre a arena e o <g id="arena-giro"> gira por dentro, com o centro
+     da rotacao escrito no atributo `transform` em unidades do viewBox.
+
+     Antes, a rotacao vivia aqui com `transform-box: view-box` +
+     `transform-origin: 50% 50%`. Isso resolve a origem contra o viewBox e
+     funciona, mas depende de (a) o navegador suportar `transform-box`,
+     (b) o <svg> ser quadrado, e (c) o padrao preserveAspectRatio manter o
+     viewBox centrado. Se um destes falha, o anel passa a girar em torno de um
+     ponto que ja nao e' o centro do circulo das bandeiras — e como o raio e'
+     grande, o erro aparece como "o circulo sai do sitio" / "a coroa gira fora
+     do centro". O <g> elimina as tres dependencias. */
+}
+
+.arena-trilho {
+  fill: rgba(var(--trilho-rgb), .55);
+  stroke: none;
+}
+
+/* O anel que gira. Vive dentro de <g id="arena-giro">, que recebe
+   rotate(a 200 200): porisso roda em torno do PROPRIO centro e nunca sai
+   dele, sem nenhum px de CSS, nem percentagem, nem transform-box.
+
+   O tracejado NAO vive aqui de proposito. O portao e' a unica saida e tem de
+   coincidir com o que a fisica aceita, por isso quem o desenha e' o motor: em
+   aplicarAbertura() ele mede o `r` real do elemento e escreve
+   stroke-dasharray / stroke-dashoffset com um FOLGO centrado no topo, onde
+   esta a #arena-seta. Se declarassemos um tracejado aqui em CSS, ele
+   sobreporia o atributo que o motor escreve e o portao voltaria a ser
+   decoracao — a bandeira atravessaria uma parede invisivel. */
+.arena-anel-giro {
+  fill: none;
+  stroke: var(--destaque);
+  stroke-width: 3;
+  stroke-linecap: butt;
+  opacity: .55;
+}
+
+.arena-seta {
+  fill: var(--fuga);
+  opacity: .85;
+  filter: url(#brilho-saida);
+}
+
+/* ---------------------------------------------------------------- */
+/* estado de espera: botao Iniciar                                  */
+/* ---------------------------------------------------------------- */
+
+.iniciar {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 12;
+  text-align: center;
+}
+.iniciar[hidden] { display: none; }
+
+/* halo escuro atras do botao: separa-o das bandeiras que passam por tras */
+.iniciar::before {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 300%; height: 340%;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(var(--halo-botao-rgb), .72) 0%, rgba(var(--halo-botao-rgb), .45) 55%, transparent 100%);
+  pointer-events: none;
+}
+
+.botao-iniciar {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 34px 14px 26px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: clamp(15px, 2.6vmin, 21px);
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--iniciar-texto);
+  background: linear-gradient(135deg, var(--iniciar-1) 0%, var(--iniciar-2) 48%, var(--iniciar-3) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .55),
+    inset 0 -2px 0 rgba(0, 0, 0, .18),
+    0 10px 28px rgba(var(--iniciar-glow-rgb), .42),
+    0 0 56px rgba(var(--iniciar-glow2-rgb), .32);
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .2s ease, filter .2s ease;
+  animation: iniciar-pulsa 2.6s ease-in-out infinite;
+}
+
+.botao-iniciar:hover {
+  transform: translateY(-2px) scale(1.05);
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .6),
+    inset 0 -2px 0 rgba(0, 0, 0, .18),
+    0 14px 34px rgba(var(--iniciar-glow-rgb), .55),
+    0 0 72px rgba(var(--iniciar-glow2-rgb), .45);
+}
+
+.botao-iniciar:active { transform: translateY(0) scale(.97); filter: brightness(.96); }
+
+.botao-iniciar:focus-visible {
+  outline: 3px solid var(--texto);
+  outline-offset: 4px;
+}
+
+/* triangulo de "play", feito de borda: herda a cor do texto */
+.botao-iniciar-icone {
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent currentColor;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .4));
+}
+
+@keyframes iniciar-pulsa {
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.18), 0 10px 28px rgba(var(--iniciar-glow-rgb), .42), 0 0 56px rgba(var(--iniciar-glow2-rgb), .32); }
+  50%      { box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 0 rgba(0,0,0,.18), 0 12px 34px rgba(var(--iniciar-glow-rgb), .62), 0 0 84px rgba(var(--iniciar-glow2-rgb), .5); }
+}
+
+.iniciar-dica {
+  margin: 12px 0 0;
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+/* a tecla de atalho, em forma de tecla */
+.iniciar-dica kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 6px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--texto);
+  background: rgba(148, 163, 184, .16);
+  border: 1px solid var(--borda);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+}
+
+/* "Botoes" desligado tambem esconde o atalho de Bandeiras do rodape */
+.sem-botoes #btn-bandeiras { display: none; }
+
+/* ajuste "Botao Iniciar" desligado: so' a tecla I inicia a batalha */
+.sem-iniciar .iniciar { display: none; }
+
+/* ---------------------------------------------------------------- */
+/* obstaculos                                                        */
+/* ---------------------------------------------------------------- */
+
+.obstaculos {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* O motor escreve largura, altura, margens e o transform (translate + rotate)
+   de cada um, relativos ao centro da arena, como faz com as bandeiras. */
+.obstaculo {
+  position: absolute;
+  left: 50%; top: 50%;
+  background: linear-gradient(160deg, var(--obstaculo-1), var(--obstaculo-2));
+  border: 2px solid var(--obstaculo-borda);
+  box-shadow: 0 0 14px rgba(var(--obstaculo-glow-rgb), .35), inset 0 0 8px rgba(0, 0, 0, .35);
+  box-sizing: border-box;
+}
+.obstaculo--circulo { border-radius: 50%; }
+.obstaculo--barra { border-radius: 999px; }
+
+/* ---------------------------------------------------------------- */
+/* lutadores                                                        */
+/* ---------------------------------------------------------------- */
+
+.lutadores {
+  position: absolute;
+  inset: 0;
+}
+
+.lutador {
+  position: absolute;
+  /* o motor escreve `translate3d(x - cx, y - cy)`, ou seja, o deslocamento e'
+     relativo ao CENTRO da arena. As margens negativas abaixo ja equilibram o
+     bloco em si, entao left/top tem de nascer no centro: com 0 o anel inteiro
+     giraria em torno do canto superior-esquerdo. */
+  left: 50%; top: 50%;
+  /* tamanho e formato vem dos Ajustes: --bandeira-escala multiplica a largura e
+     --bandeira-prop e' a altura/largura (.7 retangular, 1 quadrada e redonda).
+     As margens negativas centram o bloco no ponto que o motor posiciona. */
+  --lw: calc(var(--lutador) * var(--bandeira-escala));
+  width: var(--lw);
+  height: calc(var(--lw) * var(--bandeira-prop));
+  margin: calc(var(--lw) * var(--bandeira-prop) * -.5) 0 0 calc(var(--lw) * -.5);
+  border-radius: var(--bandeira-raio);
+  overflow: hidden;
+  cursor: pointer;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .14),
+    0 4px 12px rgba(0, 0, 0, .5);
+  transition: box-shadow .18s ease;
+}
+
+:root.formato-quadrada { --bandeira-prop: 1; --bandeira-raio: 4px; }
+:root.formato-redonda { --bandeira-prop: 1; --bandeira-raio: 50%; }
+
+.lutador img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.lutador:hover {
+  box-shadow:
+    0 0 0 2px var(--texto),
+    0 6px 18px rgba(0, 0, 0, .6);
+}
+
+.lutador--campeao {
+  box-shadow:
+    0 0 0 3px var(--vitoria),
+    0 0 20px rgba(52, 211, 153, .5);
+}
+
+/* ---------------------------------------------------------------- */
+/* efeito de batida na parede                                         */
+/* ---------------------------------------------------------------- */
+
+.efeitos {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* O motor escreve --x/--y (deslocamento do centro da arena ate o ponto do
+   anel), --ang (direcao da normal) e --forca (0.6 a 1.6). */
+.efeito-impacto {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  transform: translate(var(--x), var(--y)) rotate(var(--ang));
+}
+
+/* onda de choque: um arco que abre para dentro da arena */
+.efeito-impacto::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--forca) * -18px); top: calc(var(--forca) * -18px);
+  width: calc(var(--forca) * 36px); height: calc(var(--forca) * 36px);
+  border: 2px solid var(--efeito);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--efeito-2), inset 0 0 8px rgba(var(--efeito-rgb), .6);
+  animation: efeito-onda .5s cubic-bezier(.1, .7, .3, 1) forwards;
+}
+
+/* clarao no ponto exato do choque */
+.efeito-impacto::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--forca) * -9px); top: calc(var(--forca) * -9px);
+  width: calc(var(--forca) * 18px); height: calc(var(--forca) * 18px);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--efeito) 40%, rgba(var(--efeito-2-rgb), 0) 70%);
+  animation: efeito-clarao .32s ease-out forwards;
+}
+
+@keyframes efeito-onda {
+  from { transform: translateX(0) scale(.3); opacity: 1; }
+  to   { transform: translateX(calc(var(--forca) * -14px)) scale(2.4); opacity: 0; }
+}
+
+@keyframes efeito-clarao {
+  from { transform: scale(.4); opacity: 1; }
+  to   { transform: scale(1.8); opacity: 0; }
+}
+
+/* escapando: atravessa a abertura e some */
+.lutador--fugindo {
+  transition: transform .62s cubic-bezier(.5, 0, .75, .4), opacity .62s ease-in;
+  opacity: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+@keyframes aparecer {
+  from { opacity: 0; transform: scale(.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------------------------------------------------------------- */
+/* coroa de vitoria                                                  */
+/* ---------------------------------------------------------------- */
+
+@keyframes entrar-campeao {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.coroa {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  width: var(--anel-diametro);
+  text-align: center;
+  pointer-events: none;
+  animation: entrar-campeao .45s cubic-bezier(.2, .9, .25, 1.2) both;
+}
+
+.coroa-icone {
+  font-size: clamp(44px, 9vmin, 84px);
+  line-height: 1;
+  color: #fbbf24;
+  filter: drop-shadow(0 0 18px rgba(251, 191, 36, .55));
+}
+
+/* a coroa mostra a bandeira campea (`flag.src`), nao um glifo */
+.coroa-icone img {
+  display: block;
+  width: clamp(56px, 12vmin, 112px);
+  height: auto;
+  aspect-ratio: 3 / 2;
+  margin: 0 auto;
+  border-radius: 4px;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, .5));
+}
+
+.coroa-nome {
+  margin-top: 4px;
+  font-size: clamp(17px, 3.4vmin, 30px);
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: var(--vitoria);
+  text-shadow: 0 2px 18px rgba(52, 211, 153, .45);
+}
+
+/* tipo do resultado mostrado no painel */
+.coroa[data-tipo="eliminada"] .coroa-nome,
+.coroa[data-tipo="derrotada"] .coroa-nome { color: #f87171; text-shadow: 0 2px 18px rgba(248, 113, 113, .45); }
+.coroa[data-tipo="eliminada"] .coroa-icone img,
+.coroa[data-tipo="derrotada"] .coroa-icone img { filter: grayscale(.7) drop-shadow(0 4px 16px rgba(0, 0, 0, .5)); }
+.coroa[data-tipo="campea"] .coroa-nome { color: #fbbf24; text-shadow: 0 2px 18px rgba(251, 191, 36, .5); }
+
+.coroa-legenda {
+  font-size: clamp(11px, 1.9vmin, 14px);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .botao-iniciar { animation: none; transition: none; }
+  .coroa { animation: none; opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* ---------------------------------------------------------------- */
+/* cartao de aviso dentro do palco                                  */
+/* ---------------------------------------------------------------- */
+
+.aviso-cartao {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  z-index: 15;
+  max-width: min(88%, 460px);
+  padding: 9px 16px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: rgba(var(--vidro-rgb), .92);
+  text-align: center;
+  animation: aparecer .3s ease-out;
+}
+
+.aviso-cartao[hidden] { display: none; }
+
+.aviso-cartao-titulo {
+  margin: 0;
+  font-size: clamp(12px, 1.9vmin, 14px);
+  font-weight: 700;
+}
+
+.aviso-cartao-texto {
+  margin: 2px 0 0;
+  font-size: clamp(10px, 1.6vmin, 12.5px);
+  color: var(--texto-fraco);
+}
+
+/* ---------------------------------------------------------------- */
+/* rodape                                                           */
+/* ---------------------------------------------------------------- */
+
+.rodape {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px clamp(12px, 3vw, 28px);
+  border-top: 1px solid var(--borda);
+  background: rgba(var(--vidro-rgb), .72);
+}
+
+.rodape-dica {
+  margin: 0;
+  font-size: clamp(10px, 1.5vmin, 12.5px);
+  color: var(--texto-fraco);
+}
+
+.config {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.config-info {
+  font-size: clamp(9px, 1.4vmin, 11.5px);
+  color: var(--texto-fraco);
+}
+
+/* ---------------------------------------------------------------- */
+/* botoes e aviso flutuante                                        */
+/* ---------------------------------------------------------------- */
+
+.botao {
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease, transform .08s ease;
+}
+
+.botao:hover { border-color: var(--destaque); }
+.botao:active { transform: translateY(1px); }
+
+.botao:disabled { opacity: .45; cursor: default; }
+
+.botao--fantasma {
+  background: transparent;
+  color: var(--texto-fraco);
+}
+
+.botao--fantasma:hover { color: var(--texto); }
+
+.botao--arquivo { position: relative; }
+
+.aviso {
+  position: fixed;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: min(92vw, 520px);
+  padding: 10px 16px;
+  border: 1px solid var(--fuga);
+  border-radius: 9px;
+  background: var(--aviso-bg);
+  color: var(--aviso-texto);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.aviso[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- */
+/* responsivo                                                       */
+/* ---------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------- */
+/* layout de celular                                                */
+/* ---------------------------------------------------------------- */
+/* Vale quando o <html> tem a classe `layout-celular`, que o JS liga pelo ajuste
+   "Layout da tela" (Automatico = janela de ate' 720 px; ver Config.usaLayoutCelular).
+   E' por classe, e nao por media query, para o jogador poder forcar o layout. A
+   ideia: o placar (Escaparam / Restam) numa linha em cima, a arena grande ocupando
+   a largura toda, botoes largos para o dedo e nada fixo nas laterais. */
+
+html, body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* Moldura vertical 9:16. Quando o jogador FORCA o layout Celular (Ajustes > Aparencia),
+   a classe `moldura-celular` tambem liga: num monitor largo o jogo ocupa so' uma
+   coluna central com proporcao de celular em pe, que e' o que uma live vertical
+   (YouTube) mostra a quem assiste pelo celular — o resto da janela fica vazio. Em
+   janela estreita (um celular de verdade) a coluna e' a tela toda, entao nada muda.
+   Como a janela e' mais larga que a coluna, as medidas do layout de celular usam
+   `cqw` (largura da coluna) em vez de `vw` (largura da janela). O `body` e' o
+   container; ele tambem passa a ser o bloco de referencia das janelas fixas
+   (Ajustes, Bandeiras, aviso), que assim abrem DENTRO da moldura. */
+.layout-celular body { container-type: inline-size; }
+
+html.moldura-celular { background: var(--fundo-2); }
+
+.moldura-celular body {
+  width: min(100vw, calc(100vh * 9 / 16));
+  margin: 0 auto;
+  position: relative;
+  contain: layout;               /* faz do body o bloco de referencia das janelas fixas */
+  box-shadow: 0 0 0 1px var(--borda), 0 0 90px rgba(0, 0, 0, .55);
+}
+@supports (height: 100dvh) {
+  .moldura-celular body { width: min(100vw, calc(100dvh * 9 / 16)); }
+}
+
+.layout-celular body { overscroll-behavior: none; }
+
+/* cabecalho em duas linhas: marca + onda, e o mural embaixo ocupando a largura */
+.layout-celular .topo {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 8px calc(12px + env(safe-area-inset-left, 0px));
+}
+.layout-celular .marca { font-size: 15px; }
+.layout-celular .hud { margin-left: auto; gap: 10px; }
+.layout-celular .vencedoras {
+  order: 3;
+  flex: 1 1 100%;
+  justify-content: flex-start;
+  gap: 6px;
+}
+.layout-celular .vencedoras-lista { flex: 1 1 auto; }
+/* so' a miniatura e o placar: o nome cede (o mural nao some) */
+.layout-celular .vencedora { max-width: none; padding: 3px 5px 3px 3px; }
+.layout-celular .vencedora-nome { display: none; }
+
+/* palco: placar em cima (duas colunas), arena grande embaixo */
+.layout-celular .palco {
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "saida resto" "arena arena";
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  align-content: center;
+  gap: 6px 8px;
+  padding: 8px calc(8px + env(safe-area-inset-right, 0px)) 8px calc(8px + env(safe-area-inset-left, 0px));
+}
+.layout-celular .contador--saida { grid-area: saida; }
+.layout-celular .contador--resto { grid-area: resto; }
+.layout-celular .contador { flex-direction: column; align-items: center; gap: 0; }
+.layout-celular .contador-valor { font-size: clamp(30px, 9vw, 44px); font-size: clamp(30px, 9cqw, 44px); line-height: 1.05; }
+.layout-celular .contador-fantasmas,
+.layout-celular .contador-nota { display: none; }
+
+/* A arena usa quase a largura toda, limitada pela altura da tela. O multiplicador
+   dos Ajustes (--arena-escala) continua valendo por fora. A bandeira escala com a
+   largura, para a proporcao com o circulo (e com a colisao) se manter. */
+.layout-celular .arena {
+  grid-area: arena;
+  justify-self: center;
+  align-self: center;
+  --arena-max: calc(min(96vw, 62vh) * var(--arena-escala));
+  --arena-max: calc(min(96cqw, 62vh) * var(--arena-escala));
+  --lutador-base: clamp(32px, 10.5vw, 52px);
+  --lutador-base: clamp(32px, 10.5cqw, 52px);
+}
+@supports (height: 100dvh) {
+  .layout-celular .arena { --arena-max: calc(min(96vw, 62dvh) * var(--arena-escala)); --arena-max: calc(min(96cqw, 62dvh) * var(--arena-escala)); }
+}
+
+/* rodape: dica, tres botoes largos do mesmo tamanho e o total de bandeiras */
+.layout-celular .rodape {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px calc(12px + env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+}
+.layout-celular .rodape-dica { font-size: 12px; text-align: center; }
+.layout-celular .config {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.layout-celular .config .botao { min-height: 44px; padding: 10px 6px; font-size: 14px; }
+.layout-celular .config-info { grid-column: 1 / -1; text-align: center; }
+
+/* Iniciar: sem a dica de tecla (no toque nao ha teclado) e um pouco menor */
+.layout-celular .botao-iniciar { padding: 13px 28px 13px 22px; font-size: 17px; }
+.layout-celular .iniciar-dica { display: none; }
+
+.layout-celular .aviso { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+.layout-celular .lutador { cursor: default; }
+
+/* janelas de Ajustes e de Bandeiras viram folhas de tela cheia, com o titulo
+   fixo no topo para o Fechar nunca sumir ao rolar */
+.layout-celular .config-pagina { padding: 0; place-items: stretch; }
+.layout-celular .config-painel,
+.layout-celular .selecao-painel {
+  width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  border-width: 0;
+  padding: 0 calc(14px + env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
+}
+.layout-celular .config-cabecalho {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  background: var(--superficie);
+}
+/* o link "Abrir em nova aba" nao faz sentido no celular: ocupa o cabecalho e a aba extra atrapalha */
+.layout-celular .config-cabecalho .botao:not(button) { display: none; }
+
+.layout-celular .config-linha {
+  grid-template-columns: minmax(0, 1fr) 104px;
+  grid-template-areas: "nome nome" "range valor";
+  row-gap: 6px;
+  padding: 10px 8px;
+}
+.layout-celular .config-nome { grid-area: nome; }
+.layout-celular .config-range,
+.layout-celular .config-check,
+.layout-celular .config-select { grid-area: range; }
+.layout-celular .config-valor { grid-area: valor; }
+.layout-celular .config-select { min-height: 40px; }
+.layout-celular .config-painel-info { margin-left: 0; width: 100%; text-align: left; }
+.layout-celular .selecao-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* mural na vertical, no celular: em vez de uma coluna fixa (taparia a arena), vira
+   uma faixa que rola, logo abaixo do cabecalho, com TODAS as bandeiras */
+.layout-celular.mural-vertical .vencedoras {
+  position: static;
+  width: auto;
+  max-height: 88px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  padding: 6px 8px;
+  overflow-y: auto;
+  border-radius: 10px;
+}
+.layout-celular.mural-vertical .vencedoras-lista { flex-direction: row; flex-wrap: wrap; }
+
+@media (max-height: 560px) {
+  .arena { --arena-max: calc(min(64vh, 460px) * var(--arena-escala)); }
+}
+
+/* celular deitado (ou janela baixa) no layout de computador: cabecalho e rodape
+   mais finos para a arena ganhar altura */
+@media (max-height: 480px) {
+  :root:not(.layout-celular) .topo { padding-top: 6px; padding-bottom: 6px; }
+  :root:not(.layout-celular) .rodape { padding-top: 6px; padding-bottom: 6px; }
+  :root:not(.layout-celular) .arena { --arena-max: calc(min(60vh, 460px) * var(--arena-escala)); }
+}
+
+/* ---------------------------------------------------------------- */
+/* pagina de ajustes                                                 */
+/* ---------------------------------------------------------------- */
+
+/* Fica por cima do jogo, no mesmo documento, em vez de ser outra pagina —
+   ver o comentario do <section> em index.html sobre as URLs `blob:`. */
+.config-pagina {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 3vmin, 28px);
+  background: var(--veu);
+  backdrop-filter: blur(6px);
+  animation: config-entra .18s ease both;
+}
+
+.config-pagina[hidden] { display: none; }
+
+@keyframes config-entra {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.config-painel {
+  width: min(560px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: clamp(14px, 3vmin, 22px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+}
+
+.config-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.config-titulo {
+  margin: 0;
+  font-size: clamp(15px, 2.4vmin, 19px);
+  letter-spacing: .01em;
+}
+
+.config-grade {
+  display: grid;
+  gap: 2px;
+  padding: 10px 0;
+}
+
+.config-grupo {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0 8px;
+}
+
+.config-grupo + .config-grupo {
+  border-top: 1px solid var(--borda);
+  margin-top: 6px;
+  padding-top: 12px;
+}
+
+.config-grupo-titulo {
+  margin: 0 8px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--destaque);
+}
+
+/* Tres colunas: nome, controle, numero. A coluna do meio e' a flexivel — e'
+   ela que encolhe primeiro numa tela estreita. */
+.config-linha {
+  display: grid;
+  grid-template-columns: minmax(88px, auto) minmax(0, 1fr) 104px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 9px;
+}
+
+.config-linha:hover { background: rgba(148, 163, 184, .07); }
+
+.config-nome {
+  font-size: 13px;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.config-range {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--destaque);
+  cursor: pointer;
+}
+
+.config-select {
+  justify-self: start;
+  max-width: 100%;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--texto);
+  background: var(--fundo-2);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  cursor: pointer;
+  color-scheme: var(--esquema);
+}
+
+/* a lista que abre e' desenhada pelo navegador, que nao herda o fundo
+   translucido do campo: sem cor propria ela nasce branca com letra clara */
+.config-select option {
+  background: var(--fundo-2);
+  color: var(--texto);
+}
+
+/* Interruptor (switch) ligado/desligado. O controle continua sendo um
+   <input type="checkbox"> (e' ele que o JS le: `.checked` e o evento `change`);
+   `appearance: none` troca o desenho nativo por uma trilha com um botao que
+   desliza. As cores vem das variaveis de tema. */
+.config-check {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  flex: none;
+  justify-self: start;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--borda);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+  cursor: pointer;
+  transition: background-color .18s ease, box-shadow .18s ease;
+}
+
+/* o botao que desliza */
+.config-check::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+  transition: transform .18s ease;
+}
+
+.config-check:hover { box-shadow: inset 0 0 0 1px var(--destaque); }
+
+.config-check:checked {
+  background: var(--destaque);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
+}
+.config-check:checked::before { transform: translateX(20px); }
+
+.config-check:focus-visible {
+  outline: 2px solid var(--texto);
+  outline-offset: 3px;
+}
+
+.config-check:disabled { opacity: .45; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .config-check, .config-check::before { transition: none; }
+}
+
+/* ajuste "Botoes" desligado: os atalhos R e A continuam valendo */
+.sem-botoes #btn-reiniciar,
+.sem-botoes #btn-config { display: none; }
+
+/* ajuste "Dica do rodape" desligado: some o texto; em tela larga os botoes
+   continuam a direita (sozinhos, o space-between os jogaria para a esquerda) */
+.sem-dica .rodape-info { display: none; }
+.sem-dica:not(.layout-celular) .config { margin-left: auto; }
+
+/* ajuste "Posicao do mural" = vertical: o mural vira uma coluna lateral fixa com
+   TODAS as bandeiras (o motor nao corta em +N); rola se nao couber. Fica atras
+   do painel de Ajustes (z-index 40) e acima do palco. */
+.mural-vertical .vencedoras {
+  position: fixed;
+  left: 10px;
+  top: 64px;
+  bottom: 70px;
+  z-index: 8;
+  width: 184px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: rgba(var(--vidro-rgb), .82);
+}
+/* o cabecalho tem `backdrop-filter`, que faz dele o bloco de referencia de tudo
+   o que e' `position: fixed` dentro dele: sem desligar, o painel nasceria preso
+   a faixa do cabecalho em vez de ocupar a lateral da tela. */
+.mural-vertical .topo {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.mural-vertical .vencedoras-lista {
+  -webkit-mask-image: none;
+  mask-image: none;
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  max-width: none;
+  overflow: visible;
+}
+.mural-vertical .vencedora { max-width: none; }
+.mural-vertical .vencedora-nome { display: inline; }
+
+/* ajuste "Contador de ondas" desligado: some o numero do cabecalho */
+.sem-onda .hud { display: none; }
+
+/* ajuste "Contadores" desligado: somem Escaparam e Restam. A arena fica presa a
+   coluna do meio (senao a grade a puxaria para a esquerda) */
+.sem-contadores .contador { display: none; }
+.sem-contadores:not(.layout-celular) .arena { grid-column: 2; }
+.sem-contadores.layout-celular .palco { grid-template-areas: "arena"; grid-template-columns: 1fr; grid-template-rows: 1fr; }
+
+/* ajuste "Mural de vencedoras" desligado: some o indicador do cabecalho; o
+   historico segue sendo guardado pelo motor */
+.sem-mural .vencedoras { display: none; }
+
+/* ajuste "Seta da saida" desligado: so' o desenho some; o portao (o vao do
+   anel) e a fisica continuam iguais */
+.sem-seta .arena-seta { display: none; }
+
+/* ajuste "Cursor do mouse" desligado: some em toda a pagina, menos dentro do
+   painel de Ajustes — la o ponteiro e' o unico jeito de mexer nos controles (e
+   de religar o cursor). A regra do painel e' mais especifica, entao vence. */
+.sem-cursor,
+.sem-cursor * { cursor: none !important; }
+.sem-cursor .config-pagina,
+.sem-cursor .config-pagina * { cursor: default !important; }
+
+/* ajuste "Nomes nas vencedoras" desligado: so' o escudo no mural */
+.sem-nomes-vencedoras .vencedora-nome { display: none; }
+
+/* `tabular-nums` + largura fixa: o numero nao fica pulando de lado quando o
+   arrasta. Sem isso o painel "respira" a cada digito e o slider parece escorregar. */
+.config-valor {
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--texto-fraco);
+}
+
+.config-base {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+
+.config-painel-info {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--texto-fraco);
+  text-align: right;
+}
+
+@media (max-width: 460px) {
+  /* Nome em cima do controle: com 88px de nome e 62px de numero sobrava quase
+     nada para o slider, e o alvo de toque ficava estreito demais. */
+  .config-linha {
+    grid-template-columns: minmax(0, 1fr) 54px;
+    grid-template-areas: "nome nome" "range valor";
+    row-gap: 4px;
+  }
+
+  .config-nome { grid-area: nome; }
+  .config-range, .config-check, .config-select { grid-area: range; }
+  .config-valor { grid-area: valor; }
+
+  .config-painel-info { margin-left: 0; width: 100%; text-align: left; }
+}
+
+/* ---------------------------------------------------------------- */
+/* escolha das bandeiras da partida                                  */
+/* ---------------------------------------------------------------- */
+
+.selecao-painel { width: min(760px, 100%); }
+
+.selecao-barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.selecao-busca {
+  flex: 1 1 180px;
+  min-width: 0;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--texto);
+  background: var(--fundo-2);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  color-scheme: var(--esquema);
+}
+
+.selecao-contagem {
+  margin: 4px 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--destaque);
+}
+
+.selecao-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.selecao-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.selecao-item[hidden] { display: none; }
+.selecao-item:hover { border-color: var(--destaque); }
+.selecao-item--marcada {
+  border-color: var(--destaque);
+  background: rgba(var(--efeito-2-rgb), .14);
+}
+.selecao-item input { accent-color: var(--destaque); margin: 0; }
+.selecao-item img {
+  flex: none;
+  width: 30px;
+  height: 21px;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .14);
+}
+.selecao-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- */
+/* Ajustes em aba propria (ajustes.html)                              */
+/* ---------------------------------------------------------------- */
+
+/* A pagina em aba propria rola normalmente: o `body` do jogo e' uma coluna de
+   altura fixa com overflow escondido, o que cortaria um painel mais alto que a
+   janela. */
+body.pagina-ajustes {
+  display: block;
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto;
+}
+html:has(body.pagina-ajustes) { height: auto; }
+
+.config-pagina--aba {
+  position: static;
+  min-height: 100vh;
+  place-items: start center;
+  animation: none;
+  backdrop-filter: none;
+  background: none;
+}
+.config-pagina--aba .config-painel { max-height: none; }
+.config-nota {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--texto-fraco);
+}
+
+/* ---------------------------------------------------------------- */
+/* temas visuais                                                    */
+/* ---------------------------------------------------------------- */
+/* Escolhidos em Ajustes > Aparencia. O Noite e' o :root. Cada bloco abaixo
+   redefine o MESMO conjunto de tokens (tools/testar.js confere que nenhum
+   falta). Cores de estado (vitoria, derrota, campea) ficam fora de proposito:
+   precisam ser reconheciveis em qualquer tema. */
+
+:root[data-tema="claro"] {
+  --fundo: #e9eef8;
+  --fundo-2: #f4f7fc;
+  --superficie: #ffffff;
+  --borda: #c3cee3;
+  --texto: #16213a;
+  --texto-fraco: #566887;
+  --destaque: #0a74b8;
+  --indigo: #4f46e5;
+  --fuga: #d97706;
+  --vitoria: #059669;
+  --esquema: light;
+  --halo: #d3e2fb;
+  --vidro-rgb: 255, 255, 255;
+  --veu: rgba(22, 33, 58, .42);
+  --trilho-rgb: 255, 255, 255;
+  --halo-botao-rgb: 255, 255, 255;
+  --iniciar-1: #7fd0ff;
+  --iniciar-2: #1c8fd6;
+  --iniciar-3: #4f46e5;
+  --iniciar-texto: #ffffff;
+  --iniciar-glow-rgb: 28, 143, 214;
+  --iniciar-glow2-rgb: 79, 70, 229;
+  --obstaculo-1: #a9b8d8;
+  --obstaculo-2: #7388b3;
+  --obstaculo-borda: #4a5f8c;
+  --obstaculo-glow-rgb: 79, 70, 229;
+  --efeito: #1c8fd6;
+  --efeito-2: #0a74b8;
+  --efeito-rgb: 28, 143, 214;
+  --efeito-2-rgb: 10, 116, 184;
+  --aviso-bg: #fff4dc;
+  --aviso-texto: #8a4b05;
+}
+
+:root[data-tema="estadio"] {
+  --fundo: #06150c;
+  --fundo-2: #0a1f12;
+  --superficie: #10301c;
+  --borda: #1f5a35;
+  --texto: #e9f7ee;
+  --texto-fraco: #86b79a;
+  --destaque: #4ade80;
+  --indigo: #16a34a;
+  --fuga: #facc15;
+  --vitoria: #a3e635;
+  --esquema: dark;
+  --halo: #14532d;
+  --vidro-rgb: 6, 21, 12;
+  --veu: rgba(2, 12, 6, .76);
+  --trilho-rgb: 8, 44, 22;
+  --halo-botao-rgb: 3, 14, 7;
+  --iniciar-1: #bbf7d0;
+  --iniciar-2: #4ade80;
+  --iniciar-3: #16a34a;
+  --iniciar-texto: #03150a;
+  --iniciar-glow-rgb: 74, 222, 128;
+  --iniciar-glow2-rgb: 22, 163, 74;
+  --obstaculo-1: #3f7a52;
+  --obstaculo-2: #1f4d33;
+  --obstaculo-borda: #86efac;
+  --obstaculo-glow-rgb: 74, 222, 128;
+  --efeito: #bbf7d0;
+  --efeito-2: #4ade80;
+  --efeito-rgb: 187, 247, 208;
+  --efeito-2-rgb: 74, 222, 128;
+  --aviso-bg: rgba(30, 24, 4, .95);
+  --aviso-texto: #fde68a;
+}
+
+:root[data-tema="por-do-sol"] {
+  --fundo: #160a14;
+  --fundo-2: #1f0e1c;
+  --superficie: #2b1428;
+  --borda: #5a2a4f;
+  --texto: #fdeef2;
+  --texto-fraco: #c79bb0;
+  --destaque: #fb923c;
+  --indigo: #e11d74;
+  --fuga: #fde047;
+  --vitoria: #fda4af;
+  --esquema: dark;
+  --halo: #5a2146;
+  --vidro-rgb: 22, 10, 20;
+  --veu: rgba(14, 5, 12, .76);
+  --trilho-rgb: 44, 14, 36;
+  --halo-botao-rgb: 16, 6, 14;
+  --iniciar-1: #fed7aa;
+  --iniciar-2: #fb923c;
+  --iniciar-3: #e11d74;
+  --iniciar-texto: #2a0a12;
+  --iniciar-glow-rgb: 251, 146, 60;
+  --iniciar-glow2-rgb: 225, 29, 116;
+  --obstaculo-1: #8a4a6b;
+  --obstaculo-2: #4d2340;
+  --obstaculo-borda: #f9a8c9;
+  --obstaculo-glow-rgb: 225, 29, 116;
+  --efeito: #fed7aa;
+  --efeito-2: #fb923c;
+  --efeito-rgb: 254, 215, 170;
+  --efeito-2-rgb: 251, 146, 60;
+  --aviso-bg: rgba(40, 14, 8, .95);
+  --aviso-texto: #fed7aa;
+}
+
+:root[data-tema="neon"] {
+  --fundo: #04030a;
+  --fundo-2: #080614;
+  --superficie: #0e0a22;
+  --borda: #3b1d7a;
+  --texto: #f5f0ff;
+  --texto-fraco: #9d8ed1;
+  --destaque: #22f5ff;
+  --indigo: #ff2bd6;
+  --fuga: #ffe600;
+  --vitoria: #39ff88;
+  --esquema: dark;
+  --halo: #2a0a55;
+  --vidro-rgb: 6, 4, 16;
+  --veu: rgba(2, 1, 8, .8);
+  --trilho-rgb: 14, 6, 38;
+  --halo-botao-rgb: 3, 1, 10;
+  --iniciar-1: #9ffcff;
+  --iniciar-2: #22f5ff;
+  --iniciar-3: #ff2bd6;
+  --iniciar-texto: #05010f;
+  --iniciar-glow-rgb: 34, 245, 255;
+  --iniciar-glow2-rgb: 255, 43, 214;
+  --obstaculo-1: #3a1d7a;
+  --obstaculo-2: #1b0f45;
+  --obstaculo-borda: #ff2bd6;
+  --obstaculo-glow-rgb: 255, 43, 214;
+  --efeito: #9ffcff;
+  --efeito-2: #22f5ff;
+  --efeito-rgb: 159, 252, 255;
+  --efeito-2-rgb: 34, 245, 255;
+  --aviso-bg: rgba(20, 4, 28, .95);
+  --aviso-texto: #ffe600;
+}
+
+/* ---------------------------------------------------------------- */
+/* acessibilidade                                                   */
+/* ---------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .marca-anel { animation: none; }
+  .contador-valor.pulsa { animation: none; }
+  .lutador { transition: none; }
+  .lutador--fugindo { transition: opacity .2s linear; }
+  .efeitos { display: none; }
+  .aviso-cartao { animation: none; }
+  .vencedora--recente { animation: none; }
+  .config-pagina { animation: none; }
+}

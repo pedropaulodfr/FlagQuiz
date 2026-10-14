@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112" width="100" height="112">
+  <title>Vasco da Gama</title>
+  <defs>
+    <clipPath id="mascara"><path d="M50 4 L94 16 V53 C94 84 73 102 50 108 C27 102 6 84 6 53 V16 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#mascara)">
+    <rect x="-40.00" y="-40.00" width="180.00" height="192.00" fill="#ffffff"/>
+    <polygon points="-40.00,-7.45 140.00,104.15 140.00,119.45 -40.00,7.85" fill="#111111"/><polygon points="-40.00,104.15 140.00,-7.45 140.00,7.85 -40.00,119.45" fill="#111111"/>
+    <text x="50.00" y="34.00" font-family="Arial, Helvetica, sans-serif" font-size="8.00" font-weight="700" fill="#111111" stroke="#ffffff" stroke-width="1.28" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">VASCO</text>
+    <text x="50.00" y="50.00" font-family="Arial, Helvetica, sans-serif" font-size="8.00" font-weight="700" fill="#111111" stroke="#ffffff" stroke-width="1.28" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">DA</text>
+    <text x="50.00" y="66.00" font-family="Arial, Helvetica, sans-serif" font-size="8.00" font-weight="700" fill="#111111" stroke="#ffffff" stroke-width="1.28" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">GAMA</text>
+    <text x="50.00" y="88.00" font-family="Arial, Helvetica, sans-serif" font-size="7.00" font-weight="700" fill="#111111" stroke="#ffffff" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">1898</text>
+  </g>
+  <path d="M50 4 L94 16 V53 C94 84 73 102 50 108 C27 102 6 84 6 53 V16 Z" fill="none" stroke="#111111" stroke-width="5" stroke-linejoin="round"/>
+</svg>

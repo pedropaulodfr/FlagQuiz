@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112" width="100" height="112">
+  <title>América Mineiro</title>
+  <defs>
+    <clipPath id="mascara"><circle cx="50" cy="56" r="47"/></clipPath>
+  </defs>
+  <g clip-path="url(#mascara)">
+    <rect x="-40.00" y="-40.00" width="180.00" height="192.00" fill="#ffffff"/>
+    <circle cx="50.00" cy="56.00" r="42.00" fill="none" stroke="#0e7a3c" stroke-width="4.00"/>
+    <text x="50.00" y="44.00" font-family="Arial, Helvetica, sans-serif" font-size="8.00" font-weight="700" fill="#0e7a3c" stroke="#ffffff" stroke-width="1.28" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">AMERICA</text>
+    <text x="50.00" y="62.00" font-family="Arial, Helvetica, sans-serif" font-size="8.00" font-weight="700" fill="#0e7a3c" stroke="#ffffff" stroke-width="1.28" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">MINEIRO</text>
+    <text x="50.00" y="82.00" font-family="Arial, Helvetica, sans-serif" font-size="7.00" font-weight="700" fill="#0e7a3c" stroke="#ffffff" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">1908</text>
+  </g>
+  <circle cx="50" cy="56" r="44.5" fill="none" stroke="#0b6b3a" stroke-width="5"/>
+</svg>

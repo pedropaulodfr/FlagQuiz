@@ -1,0 +1,61 @@
+/* Gerado por tools/gerar-manifest.js. Nao edite a mao.
+ * Rodar: node tools/gerar-manifest.js
+ *
+ * Cada entrada:
+ *   id       identificador interno
+ *   src      caminho da imagem
+ *   answer   resposta canonica esperada: minuscula e sem acento, e o que
+ *            a entrada do jogador e' comparada contra
+ *   nome     forma de exibicao, com a grafia real (acento e' preservado).
+ *            Ausente quando a colecao nao tem um nome proprio declarado.
+ *   aliases  outras respostas aceitas (comparadas sem acento e minusculas)
+ */
+window.FLAG_MANIFEST = [
+  { id: "africa-do-sul", src: "flags/africa-do-sul.svg", answer: "africa do sul", nome: "África do Sul", aliases: ["africa do sul", "south africa"] },
+  { id: "alemanha", src: "flags/alemanha.svg", answer: "alemanha", nome: "Alemanha", aliases: ["alemanha"] },
+  { id: "arabia-saudita", src: "flags/arabia-saudita.svg", answer: "arabia saudita", nome: "Arábia Saudita", aliases: ["arabia saudita", "saudi arabia"] },
+  { id: "argentina", src: "flags/argentina.svg", answer: "argentina", nome: "Argentina", aliases: ["argentina"] },
+  { id: "australia", src: "flags/australia.svg", answer: "australia", nome: "Austrália", aliases: ["australia"] },
+  { id: "austria", src: "flags/austria.svg", answer: "austria", nome: "Áustria", aliases: ["austria"] },
+  { id: "belgica", src: "flags/belgica.svg", answer: "belgica", nome: "Bélgica", aliases: ["belgica"] },
+  { id: "brasil", src: "flags/brasil.svg", answer: "brasil", nome: "Brasil", aliases: ["brasil", "brazil"] },
+  { id: "canada", src: "flags/canada.svg", answer: "canada", nome: "Canadá", aliases: ["canada"] },
+  { id: "chile", src: "flags/chile.svg", answer: "chile", nome: "Chile", aliases: ["chile"] },
+  { id: "china", src: "flags/china.svg", answer: "china", nome: "China", aliases: ["china"] },
+  { id: "colombia", src: "flags/colombia.svg", answer: "colombia", nome: "Colômbia", aliases: ["colombia"] },
+  { id: "coreia-do-sul", src: "flags/coreia-do-sul.svg", answer: "coreia do sul", nome: "Coreia do Sul", aliases: ["coreia do sul", "south korea"] },
+  { id: "dinamarca", src: "flags/dinamarca.svg", answer: "dinamarca", nome: "Dinamarca", aliases: ["dinamarca", "denmark"] },
+  { id: "egipto", src: "flags/egipto.svg", answer: "egipto", nome: "Egipto", aliases: ["egipto", "egypt"] },
+  { id: "espanha", src: "flags/espanha.svg", answer: "espanha", nome: "Espanha", aliases: ["espanha", "spain"] },
+  { id: "estados-unidos", src: "flags/estados-unidos.svg", answer: "estados unidos", nome: "Estados Unidos", aliases: ["estados unidos", "eua", "usa", "united states", "united states of america"] },
+  { id: "filipinas", src: "flags/filipinas.svg", answer: "filipinas", nome: "Filipinas", aliases: ["filipinas", "philippines"] },
+  { id: "finlandia", src: "flags/finlandia.svg", answer: "finlandia", nome: "Finlândia", aliases: ["finlandia", "finland"] },
+  { id: "franca", src: "flags/franca.svg", answer: "franca", nome: "França", aliases: ["franca", "france"] },
+  { id: "grecia", src: "flags/grecia.svg", answer: "grecia", nome: "Grécia", aliases: ["grecia", "greece"] },
+  { id: "india", src: "flags/india.svg", answer: "india", nome: "Índia", aliases: ["india"] },
+  { id: "indonesia", src: "flags/indonesia.svg", answer: "indonesia", nome: "Indonésia", aliases: ["indonesia"] },
+  { id: "irlanda", src: "flags/irlanda.svg", answer: "irlanda", nome: "Irlanda", aliases: ["irlanda", "ireland"] },
+  { id: "israel", src: "flags/israel.svg", answer: "israel", nome: "Israel", aliases: ["israel"] },
+  { id: "italia", src: "flags/italia.svg", answer: "italia", nome: "Itália", aliases: ["italia", "italy"] },
+  { id: "japao", src: "flags/japao.svg", answer: "japao", nome: "Japão", aliases: ["japao", "japan"] },
+  { id: "malasia", src: "flags/malasia.svg", answer: "malasia", nome: "Malásia", aliases: ["malasia", "malaysia"] },
+  { id: "mexico", src: "flags/mexico.svg", answer: "mexico", nome: "México", aliases: ["mexico"] },
+  { id: "nigeria", src: "flags/nigeria.svg", answer: "nigeria", nome: "Nigéria", aliases: ["nigeria"] },
+  { id: "noruega", src: "flags/noruega.svg", answer: "noruega", nome: "Noruega", aliases: ["noruega", "norway"] },
+  { id: "nova-zelandia", src: "flags/nova-zelandia.svg", answer: "nova zelandia", nome: "Nova Zelândia", aliases: ["nova zelandia", "new zealand"] },
+  { id: "paises-baixos", src: "flags/paises-baixos.svg", answer: "paises baixos", nome: "Países Baixos", aliases: ["paises baixos", "holanda", "netherlands", "holland"] },
+  { id: "peru", src: "flags/peru.svg", answer: "peru", nome: "Peru", aliases: ["peru"] },
+  { id: "polonia", src: "flags/polonia.svg", answer: "polonia", nome: "Polônia", aliases: ["polonia", "poland"] },
+  { id: "portugal", src: "flags/portugal.svg", answer: "portugal", nome: "Portugal", aliases: ["portugal"] },
+  { id: "reino-unido", src: "flags/reino-unido.svg", answer: "reino unido", nome: "Reino Unido", aliases: ["reino unido", "inglaterra", "england", "uk", "great britain", "britain"] },
+  { id: "republica-tcheca", src: "flags/republica-tcheca.svg", answer: "republica tcheca", nome: "República Tcheca", aliases: ["republica tcheca", "tcheca", "czechia", "czech republic"] },
+  { id: "russia", src: "flags/russia.svg", answer: "russia", nome: "Rússia", aliases: ["russia"] },
+  { id: "singapura", src: "flags/singapura.svg", answer: "singapura", nome: "Singapura", aliases: ["singapura", "singapore"] },
+  { id: "suecia", src: "flags/suecia.svg", answer: "suecia", nome: "Suécia", aliases: ["suecia", "sweden", "sueca"] },
+  { id: "suica", src: "flags/suica.svg", answer: "suica", nome: "Suíça", aliases: ["suica", "switzerland"] },
+  { id: "tailandia", src: "flags/tailandia.svg", answer: "tailandia", nome: "Tailândia", aliases: ["tailandia", "thailand"] },
+  { id: "turquia", src: "flags/turquia.svg", answer: "turquia", nome: "Turquia", aliases: ["turquia", "turkey", "turquie"] },
+  { id: "ucrania", src: "flags/ucrania.svg", answer: "ucrania", nome: "Ucrânia", aliases: ["ucrania", "ukraine"] },
+  { id: "uruguai", src: "flags/uruguai.svg", answer: "uruguai", nome: "Uruguai", aliases: ["uruguai"] },
+  { id: "vietna", src: "flags/vietna.svg", answer: "vietna", nome: "Vietnã", aliases: ["vietna", "vietnam", "viet nam"] }
+];

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112" width="100" height="112">
+  <title>São Bernardo</title>
+  <defs>
+    <clipPath id="mascara"><path d="M50 3 L90 19 V51 C90 82 71 101 50 108 C29 101 10 82 10 51 V19 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#mascara)">
+    <rect x="-40.00" y="-40.00" width="180.00" height="192.00" fill="#ffd200"/>
+    <rect x="-40.00" y="56.00" width="180.00" height="52.00" fill="#0b3b8c"/>
+    <text x="50.00" y="32.00" font-family="Arial, Helvetica, sans-serif" font-size="5.80" font-weight="700" fill="#0b3b8c" stroke="#ffffff" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">SAO BERNARDO</text>
+    <text x="50.00" y="78.00" font-family="Arial, Helvetica, sans-serif" font-size="12.00" font-weight="700" fill="#ffffff" stroke="#111111" stroke-width="1.92" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">SBC</text>
+    <text x="50.00" y="96.00" font-family="Arial, Helvetica, sans-serif" font-size="6.50" font-weight="700" fill="#ffd200" stroke="#111111" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">1928</text>
+  </g>
+  <path d="M50 3 L90 19 V51 C90 82 71 101 50 108 C29 101 10 82 10 51 V19 Z" fill="none" stroke="#8a6d00" stroke-width="5" stroke-linejoin="round"/>
+</svg>

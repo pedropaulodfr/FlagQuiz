@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flag Arena &mdash; a ultima bandeira sobrevivente</title>
+<meta name="description" content="Simulacao de sobrevivencia: bandeiras se movem num circulo e vao escapando pela abertura ate sobrar uma vencedora.">
+<link rel="stylesheet" href="styles.css">
+<script>
+/* aplica o tema salvo antes da primeira pintura (a chave e' Config.CHAVE, de js/config.js) */
+try { var __c = JSON.parse(localStorage.getItem('flag-arena:config:v2')); if (__c && __c.tema) document.documentElement.setAttribute('data-tema', __c.tema); } catch (e) {}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%230b1020'/><circle cx='16' cy='16' r='10' fill='none' stroke='%2338bdf8' stroke-width='2.5' stroke-dasharray='44 19'/></svg>">
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <span class="marca-anel" aria-hidden="true"></span>
+    <span>Flag&nbsp;Arena</span>
+  </div>
+
+  <!-- mural das vencedoras: quem fechou cada onda ate aqui -->
+  <div class="vencedoras" id="vencedoras">
+    <span class="vencedoras-rotulo">
+      <span id="vencedoras-titulo">vencedoras</span>
+      <b class="vencedoras-total" id="vencedoras-total"></b>
+    </span>
+    <div class="vencedoras-lista" id="vencedoras-lista" aria-live="polite"></div>
+    <span class="vencedoras-vazia" id="vencedoras-vazia">nenhuma ainda</span>
+  </div>
+
+  <div class="hud">
+    <div class="hud-item">
+      <span class="hud-rotulo">onda</span>
+      <strong class="hud-valor" id="onda">1</strong>
+    </div>
+  </div>
+</header>
+
+<main class="palco">
+
+  <!-- contador da esquerda: quantas ja escaparam -->
+  <aside class="contador contador--saida" aria-live="polite">
+    <span class="contador-rotulo">escaparam</span>
+    <strong class="contador-valor" id="contador-escaparam">0</strong>
+    <div class="contador-fantasmas" id="fantasmas-escaparam" aria-hidden="true"></div>
+  </aside>
+
+  <!-- a arena: circulo com uma abertura por onde as bandeiras escapam -->
+  <div class="arena" id="arena">
+    <svg class="arena-anel" id="arena-anel" viewBox="0 0 400 400" aria-hidden="true">
+      <defs>
+        <filter id="brilho-saida" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle class="arena-trilho" id="arena-trilho" cx="200" cy="200" r="182"/>
+      <!-- Tudo o que gira vive dentro deste <g>. A rotacao usa o atributo
+           `transform` do proprio SVG, com o centro ESCRITO no atributo
+           (rotate(a 200 200)), em unidades do viewBox: e' a mesma unidade do
+           `r="182"` e do `cx/cy="200"`, portanto o eixo coincide com o centro
+           do circulo das bandeiras por construcao. Nao ha percentagem, nem
+           px de CSS, nem `transform-box` para o browser interpretar. -->
+      <g id="arena-giro">
+        <circle class="arena-anel-giro" id="arena-anel-giro" cx="200" cy="200" r="182"/>
+        <path class="arena-seta" id="arena-seta" d="M200 8 l14 26 h-28 z"/>
+      </g>
+    </svg>
+
+    <!-- estado de espera: a batalha so' comeca quando o jogador inicia -->
+    <div class="iniciar" id="iniciar" hidden>
+      <button type="button" class="botao-iniciar" id="btn-iniciar" title="Atalho: I">
+        <span class="botao-iniciar-icone" aria-hidden="true"></span>
+        <span>Iniciar</span>
+      </button>
+      <p class="iniciar-dica">ou tecle <kbd>I</kbd></p>
+    </div>
+
+    <div class="coroa" id="coroa" hidden>
+      <div class="coroa-icone" id="coroa-icone" aria-hidden="true">&#9812;</div>
+      <div class="coroa-nome" id="coroa-nome">VOC&Ecirc; VENCEU</div>
+      <div class="coroa-legenda" id="coroa-legenda">a arena e' sua</div>
+    </div>
+
+    <!-- obstaculos (escolhidos nos Ajustes): ficam sob as bandeiras -->
+    <div class="obstaculos" id="obstaculos" aria-hidden="true"></div>
+
+    <div class="lutadores" id="lutadores"></div>
+    <!-- faiscas das batidas na parede (so' desenho) -->
+    <div class="efeitos" id="efeitos" aria-hidden="true"></div>
+  </div>
+
+  <!-- contador da direita: quantas ainda restam -->
+  <aside class="contador contador--resto" aria-live="polite">
+    <span class="contador-rotulo">restam</span>
+    <strong class="contador-valor" id="contador-restam">0</strong>
+    <p class="contador-nota" id="nota-resto">elas escapam pela abertura</p>
+  </aside>
+
+  <div class="aviso-cartao" id="aviso-cartao" hidden>
+    <p class="aviso-cartao-titulo" id="aviso-titulo"></p>
+    <p class="aviso-cartao-texto" id="aviso-texto"></p>
+  </div>
+
+</main>
+
+<footer class="rodape">
+  <div class="rodape-info">
+    <p class="rodape-dica" id="dica">Acompanhe as bandeiras: elas vao escapando pela abertura ate sobrar uma vencedora.</p>
+  </div>
+
+  <div class="config">
+    <button type="button" class="botao botao--fantasma" id="btn-reiniciar" title="Atalho: R">Reiniciar arena</button>
+
+    <button type="button" class="botao botao--fantasma" id="btn-config" title="Atalho: A">Ajustes</button>
+
+    <button type="button" class="botao botao--fantasma" id="btn-bandeiras" title="Atalho: B">Bandeiras</button>
+
+    <span class="config-info" id="config-info">47 bandeiras do projeto</span>
+  </div>
+</footer>
+
+<!-- Ajustes: painel por cima do jogo, no MESMO documento.
+     Nao pode ser outra pagina HTML porque a pasta de bandeiras vira uma
+     `blob:` URL criada por File.createObjectURL — e uma URL `blob:` so' vale
+     dentro do documento que a criou. Navegar para outro .html destruiria o
+     objeto antes de a proxima pagina chegar a usa-lo, e o jogo abriria vazio. -->
+<section class="config-pagina" id="config-pagina" hidden aria-labelledby="config-titulo">
+  <div class="config-painel">
+
+    <header class="config-cabecalho">
+      <h2 class="config-titulo" id="config-titulo">Ajustes da arena</h2>
+      <a class="botao botao--fantasma" href="ajustes.html" target="_blank" rel="noopener"
+         title="Abre os Ajustes numa aba separada; as mudancas valem neste jogo">Abrir em nova aba</a>
+      <button type="button" class="botao botao--fantasma" id="btn-fechar-config">Fechar</button>
+    </header>
+
+    <!--
+      Cada linha tem tres pecas: o <label> (o nome), o <input type=range> (o
+      controle) e o <output> (o numero atual). O `for` do label e do output
+      aponta para o id do range — e' o que faz o navegador ligar o texto ao
+      controle, e o que permite clicar no nome e mexer no slider.
+
+      Os valores do atributo min/max/step/value repetem o schema de
+      js/config.js. Sao o mesmo numero em dois lugares porque o HTML precisa
+      desenhar o controle antes de qualquer script rodar; a fonte da verdade
+      continua sendo config.js, que reconcilia os dois ao abrir o painel.
+    -->
+    <div class="config-grade">
+      <!-- ajustes:inicio (copiado para ajustes.html por tools/sincronizar-ajustes.js) -->
+      <section class="config-grupo" data-grupo="partida">
+        <h3 class="config-grupo-titulo">Partida</h3>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-modo">Modo de jogo</label>
+          <select class="config-select" id="cfg-modo">
+            <option value="vencedora">Quem escapa vence</option>
+            <option value="eliminacao">Quem escapa é eliminada</option>
+            <option value="ultima">Última na arena vence</option>
+          </select>
+          <output class="config-valor" id="cfg-modo-valor" for="cfg-modo">Quem escapa vence</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-rodadas">Número de rodadas</label>
+          <input class="config-range" type="range" id="cfg-rodadas"
+                 min="0" max="100" step="1" value="0">
+          <output class="config-valor" id="cfg-rodadas-valor" for="cfg-rodadas">Sem limite</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-vencedorasVoltam">Vencedoras voltam às rodadas</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-vencedorasVoltam" checked>
+          <output class="config-valor" id="cfg-vencedorasVoltam-valor" for="cfg-vencedorasVoltam">Sim</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-lutadores">Bandeiras na arena</label>
+          <input class="config-range" type="range" id="cfg-lutadores"
+                 min="2" max="60" step="1" value="16">
+          <output class="config-valor" id="cfg-lutadores-valor" for="cfg-lutadores">16</output>
+        </div>
+      </section>
+
+      <section class="config-grupo" data-grupo="arena">
+        <h3 class="config-grupo-titulo">Arena</h3>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-arena">Tamanho do círculo</label>
+          <input class="config-range" type="range" id="cfg-arena"
+                 min="0.5" max="1.6" step="0.01" value="1">
+          <output class="config-valor" id="cfg-arena-valor" for="cfg-arena">100%</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-anel">Raio do anel</label>
+          <input class="config-range" type="range" id="cfg-anel"
+                 min="28" max="49" step="0.5" value="45.5">
+          <output class="config-valor" id="cfg-anel-valor" for="cfg-anel">45,5%</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-abertura">Tamanho da abertura</label>
+          <input class="config-range" type="range" id="cfg-abertura"
+                 min="15" max="180" step="1" value="69">
+          <output class="config-valor" id="cfg-abertura-valor" for="cfg-abertura">69°</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-rotacao">Rotação do anel</label>
+          <input class="config-range" type="range" id="cfg-rotacao"
+                 min="0" max="1.2" step="0.01" value="0.18">
+          <output class="config-valor" id="cfg-rotacao-valor" for="cfg-rotacao">0,18 rad/s</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-seta">Seta da saída</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-seta" checked>
+          <output class="config-valor" id="cfg-seta-valor" for="cfg-seta">Ligado</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-obstaculo">Obstáculo</label>
+          <select class="config-select" id="cfg-obstaculo">
+            <option value="nenhum">Nenhum</option>
+            <option value="pino">Pino central</option>
+            <option value="tres-pinos">Três pinos</option>
+            <option value="hexagono">Pinos em hexágono</option>
+            <option value="barra">Barra giratória</option>
+            <option value="cruz">Cruz giratória</option>
+          </select>
+          <output class="config-valor" id="cfg-obstaculo-valor" for="cfg-obstaculo">Nenhum</output>
+        </div>
+      </section>
+
+      <section class="config-grupo" data-grupo="bandeiras">
+        <h3 class="config-grupo-titulo">Bandeiras</h3>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-velocidade">Velocidade</label>
+          <input class="config-range" type="range" id="cfg-velocidade"
+                 min="0.2" max="3" step="0.05" value="1">
+          <output class="config-valor" id="cfg-velocidade-valor" for="cfg-velocidade">1&times;</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-tamanhoBandeira">Tamanho das bandeiras</label>
+          <input class="config-range" type="range" id="cfg-tamanhoBandeira"
+                 min="0.5" max="1.6" step="0.05" value="1">
+          <output class="config-valor" id="cfg-tamanhoBandeira-valor" for="cfg-tamanhoBandeira">1,00&times;</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-formato">Formato das bandeiras</label>
+          <select class="config-select" id="cfg-formato">
+            <option value="retangular">Retangular</option>
+            <option value="quadrada">Quadrada</option>
+            <option value="redonda">Redonda</option>
+          </select>
+          <output class="config-valor" id="cfg-formato-valor" for="cfg-formato">Retangular</output>
+        </div>
+      </section>
+
+      <section class="config-grupo" data-grupo="som">
+        <h3 class="config-grupo-titulo">Som e efeitos</h3>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-som">Som da colisão</label>
+          <select class="config-select" id="cfg-som">
+            <option value="bolha">Bolha</option>
+            <option value="gota">Gota</option>
+            <option value="sino">Sino</option>
+            <option value="madeira">Madeira</option>
+            <option value="moeda">Moeda</option>
+            <option value="estalo">Estalo</option>
+          </select>
+          <output class="config-valor" id="cfg-som-valor" for="cfg-som">Bolha</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-volume">Volume do som</label>
+          <input class="config-range" type="range" id="cfg-volume"
+                 min="0" max="100" step="5" value="50">
+          <output class="config-valor" id="cfg-volume-valor" for="cfg-volume">50%</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-efeitoParede">Efeito na parede</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-efeitoParede" checked>
+          <output class="config-valor" id="cfg-efeitoParede-valor" for="cfg-efeitoParede">Ligado</output>
+        </div>
+      </section>
+
+      <section class="config-grupo" data-grupo="placar">
+        <h3 class="config-grupo-titulo">Placar e indicadores</h3>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-contadores">Contadores de bandeiras</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-contadores" checked>
+          <output class="config-valor" id="cfg-contadores-valor" for="cfg-contadores">Ligado</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-contadorOndas">Contador de ondas</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-contadorOndas" checked>
+          <output class="config-valor" id="cfg-contadorOndas-valor" for="cfg-contadorOndas">Ligado</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-mural">Mural de vencedoras</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-mural" checked>
+          <output class="config-valor" id="cfg-mural-valor" for="cfg-mural">Ligado</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-muralPosicao">Posição do mural</label>
+          <select class="config-select" id="cfg-muralPosicao">
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+          <output class="config-valor" id="cfg-muralPosicao-valor" for="cfg-muralPosicao">Horizontal</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-rolagemMural">Velocidade do passeio do mural</label>
+          <input class="config-range" type="range" id="cfg-rolagemMural"
+                 min="0" max="150" step="5" value="50">
+          <output class="config-valor" id="cfg-rolagemMural-valor" for="cfg-rolagemMural">50 px/s</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-nomesVencedoras">Nomes nas vencedoras</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-nomesVencedoras" checked>
+          <output class="config-valor" id="cfg-nomesVencedoras-valor" for="cfg-nomesVencedoras">Ligado</output>
+        </div>
+      </section>
+
+      <section class="config-grupo" data-grupo="aparencia">
+        <h3 class="config-grupo-titulo">Aparência</h3>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-tema">Tema visual</label>
+          <select class="config-select" id="cfg-tema">
+            <option value="noite">Noite</option>
+            <option value="claro">Claro</option>
+            <option value="estadio">Estádio</option>
+            <option value="por-do-sol">Pôr do sol</option>
+            <option value="neon">Neon</option>
+          </select>
+          <output class="config-valor" id="cfg-tema-valor" for="cfg-tema">Noite</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-layout">Layout da tela</label>
+          <select class="config-select" id="cfg-layout">
+            <option value="auto">Automático</option>
+            <option value="celular">Celular (vertical 9:16)</option>
+            <option value="computador">Computador</option>
+          </select>
+          <output class="config-valor" id="cfg-layout-valor" for="cfg-layout">Automático</output>
+        </div>
+      </section>
+
+      <section class="config-grupo" data-grupo="interface">
+        <h3 class="config-grupo-titulo">Interface</h3>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-botaoIniciar">Botão Iniciar</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-botaoIniciar" checked>
+          <output class="config-valor" id="cfg-botaoIniciar-valor" for="cfg-botaoIniciar">Ligado</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-botoes">Botões Reiniciar e Ajustes</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-botoes" checked>
+          <output class="config-valor" id="cfg-botoes-valor" for="cfg-botoes">Ligado</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-dica">Dica do rodapé</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-dica" checked>
+          <output class="config-valor" id="cfg-dica-valor" for="cfg-dica">Ligado</output>
+        </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-cursor">Cursor do mouse</label>
+          <input class="config-check" type="checkbox" role="switch" id="cfg-cursor" checked>
+          <output class="config-valor" id="cfg-cursor-valor" for="cfg-cursor">Ligado</output>
+        </div>
+      </section>
+      <!-- ajustes:fim -->
+    </div>
+
+    <footer class="config-base">
+      <label class="botao botao--arquivo">
+        Carregar pasta de bandeiras
+        <input type="file" id="input-pasta" webkitdirectory directory multiple hidden>
+      </label>
+
+      <button type="button" class="botao botao--fantasma" id="btn-reset-config">Voltar ao padrão</button>
+
+      <span class="config-painel-info" id="config-resumo"></span>
+    </footer>
+
+  </div>
+</section>
+
+<!-- Escolher quais bandeiras disputam a partida. Nenhuma marcada = sorteio. -->
+<section class="config-pagina" id="selecao-pagina" hidden aria-labelledby="selecao-titulo">
+  <div class="config-painel selecao-painel">
+    <header class="config-cabecalho">
+      <h2 class="config-titulo" id="selecao-titulo">Bandeiras da partida</h2>
+      <button type="button" class="botao botao--fantasma" id="btn-fechar-selecao">Fechar</button>
+    </header>
+
+    <p class="config-nota">Marque as bandeiras que devem disputar. Com nenhuma marcada, o jogo sorteia
+      <span id="selecao-sorteio">16</span> da coleção. Vale a partir da próxima partida (Reiniciar).</p>
+
+    <div class="selecao-barra">
+      <input type="search" class="selecao-busca" id="selecao-busca" placeholder="Buscar bandeira…" aria-label="Buscar bandeira">
+      <button type="button" class="botao botao--fantasma" id="btn-selecao-todas">Marcar todas</button>
+      <button type="button" class="botao botao--fantasma" id="btn-selecao-nenhuma">Limpar</button>
+    </div>
+
+    <p class="selecao-contagem" id="selecao-contagem" aria-live="polite"></p>
+
+    <div class="selecao-grade" id="selecao-grade"></div>
+  </div>
+</section>
+
+<div class="aviso" id="aviso" hidden></div>
+
+<script src="flags/manifest.js"></script>
+<script src="js/flags.js"></script>
+<script src="js/game.js"></script>
+<!-- config.js antes de app.js: app.js le o schema e os valores guardados no
+     primeiro quadro, e precisa que Config ja exista. -->
+<script src="js/config.js"></script>
+<script src="js/rolagem.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

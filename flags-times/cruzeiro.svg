@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112" width="100" height="112">
+  <title>Cruzeiro</title>
+  <defs>
+    <clipPath id="mascara"><path d="M50 4 L94 16 V53 C94 84 73 102 50 108 C27 102 6 84 6 53 V16 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#mascara)">
+    <rect x="-40.00" y="-40.00" width="180.00" height="192.00" fill="#0d2c6b"/>
+    <polygon points="-40.00,-9.21 140.00,102.39 140.00,121.21 -40.00,9.61" fill="#ffffff"/>
+    <circle cx="50.00" cy="44.00" r="19.00" fill="none" stroke="#0d2c6b" stroke-width="3.00"/>
+    <text x="50.00" y="44.00" font-family="Arial, Helvetica, sans-serif" font-size="19.00" font-weight="700" fill="#0d2c6b" stroke="#ffffff" stroke-width="3.04" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">C</text>
+    <text x="50.00" y="78.00" font-family="Arial, Helvetica, sans-serif" font-size="7.00" font-weight="700" fill="#0d2c6b" stroke="#ffffff" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">CRUZEIRO</text>
+    <text x="50.00" y="90.00" font-family="Arial, Helvetica, sans-serif" font-size="7.00" font-weight="700" fill="#0d2c6b" stroke="#ffffff" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">1921</text>
+  </g>
+  <path d="M50 4 L94 16 V53 C94 84 73 102 50 108 C27 102 6 84 6 53 V16 Z" fill="none" stroke="#0d2c6b" stroke-width="5" stroke-linejoin="round"/>
+</svg>

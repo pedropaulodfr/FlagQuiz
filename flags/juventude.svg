@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112" width="100" height="112">
+  <title>Juventude</title>
+  <defs>
+    <clipPath id="mascara"><path d="M50 5 C69 5 94 11 94 11 V54 C94 82 74 100 50 108 C26 100 6 82 6 54 V11 C6 11 31 5 50 5 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#mascara)">
+    <rect x="-40.00" y="-40.00" width="180.00" height="192.00" fill="#ffffff"/>
+    <circle cx="50.00" cy="56.00" r="40.00" fill="none" stroke="#0e7a3c" stroke-width="4.00"/>
+    <text x="50.00" y="52.00" font-family="Arial, Helvetica, sans-serif" font-size="19.00" font-weight="700" fill="#0e7a3c" stroke="#ffffff" stroke-width="3.04" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">JUV</text>
+    <text x="50.00" y="82.00" font-family="Arial, Helvetica, sans-serif" font-size="7.00" font-weight="700" fill="#0e7a3c" stroke="#ffffff" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">1913</text>
+  </g>
+  <path d="M50 5 C69 5 94 11 94 11 V54 C94 82 74 100 50 108 C26 100 6 82 6 54 V11 C6 11 31 5 50 5 Z" fill="none" stroke="#0b6b3a" stroke-width="5" stroke-linejoin="round"/>
+</svg>

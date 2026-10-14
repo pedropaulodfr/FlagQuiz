@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112" width="100" height="112">
+  <title>Chapecoense</title>
+  <defs>
+    <clipPath id="mascara"><path d="M50 3 L90 19 V51 C90 82 71 101 50 108 C29 101 10 82 10 51 V19 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#mascara)">
+    <rect x="-40.00" y="-40.00" width="180.00" height="192.00" fill="#0e7a3c"/>
+    <rect x="-40.00" y="56.00" width="180.00" height="52.00" fill="#1b3f8b"/>
+    <polygon points="-40.00,-5.68 140.00,105.92 140.00,117.68 -40.00,6.08" fill="#ffffff"/>
+    <text x="50.00" y="34.00" font-family="Arial, Helvetica, sans-serif" font-size="6.00" font-weight="700" fill="#ffffff" stroke="#111111" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">CHAPECOENSE</text>
+    <text x="50.00" y="84.00" font-family="Arial, Helvetica, sans-serif" font-size="7.50" font-weight="700" fill="#ffffff" stroke="#111111" stroke-width="1.20" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" dominant-baseline="central">2009</text>
+  </g>
+  <path d="M50 3 L90 19 V51 C90 82 71 101 50 108 C29 101 10 82 10 51 V19 Z" fill="none" stroke="#0b6b3a" stroke-width="5" stroke-linejoin="round"/>
+</svg>
