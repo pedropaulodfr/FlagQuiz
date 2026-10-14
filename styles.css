@@ -448,6 +448,9 @@ body {
   stroke-width: 3;
   stroke-linecap: butt;
   opacity: .55;
+  /* a cor da parede (Ajustes > Arena) troca o `stroke` a cada batida; a
+     transicao so' suaviza a troca, nao muda o desenho */
+  transition: stroke .16s linear;
 }
 
 .arena-seta {
@@ -1770,6 +1773,7 @@ html:has(body.pagina-ajustes) { height: auto; }
   .contador-valor.pulsa { animation: none; }
   .lutador { transition: none; }
   .lutador--fugindo { transition: opacity .2s linear; }
+  .arena-anel-giro { transition: none; }
   .efeitos { display: none; }
   :root[data-efeito-anel] .arena::before,
   :root[data-efeito-anel] .arena::after { animation: none; }

@@ -87,6 +87,7 @@
     rodadas: 0,                 /* quantas ondas tem a partida; 0 = sem limite */
     vencedorasVoltam: true,     /* false: quem ja venceu uma onda nao entra nas seguintes */
     efeitoParede: true,         /* desenha a onda de choque nas batidas na parede (so' visual) */
+    corParede: 'nenhum',        /* pinta o anel numa cor nova a cada batida (ver pintarParede) */
     /* folga do CENTRO do lutador ate o anel. Precisa acomodar a propria
        bandeira: com a folga antiga (0.055) os cantos do bloco passavam do
        anel em telas grandes, porque o centro podia chegar a 0.40 do lado e a
@@ -153,6 +154,9 @@
       refVel: 0,                 /* escala de velocidade a que as velocidades guardadas correspondem */
       colisoes: 0,               /* impactos entre bandeiras nesta onda (telemetria) */
       impacto: 0,                /* soma das velocidades de aproximacao (telemetria) */
+      paredeMatiz: 0,            /* matiz corrente do anel quando CFG.corParede avanca a cor */
+      paredeToque: -1,           /* tempoOnda da ultima troca de cor, para nao virar ruido */
+      paredeTimer: null,         /* apaga o lampejo da parede depois de um instante */
       callbacks: {},
       ultimoQuadro: 0,
       coroaTimer: null
@@ -298,6 +302,7 @@
         l.vx -= (1 + CFG.restituicaoParede) * dot * o.nx;
         l.vy -= (1 + CFG.restituicaoParede) * dot * o.ny;
         efeitoParede(l, o, dot);
+        pintarParede();
       }
       return false;
     }
@@ -323,6 +328,43 @@
       fx.style.setProperty('--forca', String(Math.min(1.6, 0.6 + forca * 0.6)));
       el.efeitos.appendChild(fx);
       setTimeout(function () { if (fx.parentNode) fx.parentNode.removeChild(fx); }, 560);
+    }
+
+    /* Cor da parede ao bater: a cada batida, o anel acende numa cor nova. Puro
+       desenho — a fisica nao ve nada disto. `estado.paredeMatiz` caminha pela
+       roda de cores; um piso de tempo evita a metralhadora de cores quando a
+       bandeira raspa a parede varias vezes seguidas. */
+    function pintarParede() {
+      var anel = el.arenaAnelGiro;
+      if (!anel || !anel.style || CFG.corParede === 'nenhum') return;
+      if (estado.tempoOnda - estado.paredeToque < 0.1) return;
+      estado.paredeToque = estado.tempoOnda;
+
+      var h;
+      if (CFG.corParede === 'sorteia') {
+        h = Math.random() * 360;
+      } else {
+        estado.paredeMatiz = (estado.paredeMatiz + 47) % 360;
+        h = estado.paredeMatiz;
+      }
+      anel.style.stroke = 'hsl(' + Math.round(h) + ', 90%, 62%)';
+
+      /* Lampejo: acende a cor e apaga sozinho, voltando a cor do tema */
+      if (CFG.corParede === 'pisca') {
+        if (estado.paredeTimer) clearTimeout(estado.paredeTimer);
+        estado.paredeTimer = setTimeout(function () {
+          estado.paredeTimer = null;
+          anel.style.stroke = '';
+        }, 420);
+      }
+    }
+
+    /* Volta o anel a cor do tema e zera o estado da cor da parede (nova onda). */
+    function limparParede() {
+      if (estado.paredeTimer) { clearTimeout(estado.paredeTimer); estado.paredeTimer = null; }
+      estado.paredeMatiz = 0;
+      estado.paredeToque = -1;
+      if (el.arenaAnelGiro && el.arenaAnelGiro.style) el.arenaAnelGiro.style.stroke = '';
     }
 
     /* Usado no resize: traz para dentro quem ficou alem da parede. */
@@ -629,6 +671,7 @@
       estado.restam = 0;
       estado.tempoOnda = 0;
       estado.resultado = null;
+      limparParede();
 
       var alvos = lotsAlvos();
       estado.refVel = fatorVel();
@@ -1127,6 +1170,7 @@ function linhaVencedora(linha, recente) {
       /* limpa o que sobrou das ondas anteriores (inclusive os fantasmas) */
       if (el.lutadores) el.lutadores.innerHTML = '';
       if (el.efeitos) el.efeitos.innerHTML = '';
+      limparParede();
       estado.resultado = null;
       if (el.fantasmasEscaparam) el.fantasmasEscaparam.innerHTML = '';
       pintarVencedoras();

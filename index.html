@@ -246,6 +246,17 @@ try { var __c = JSON.parse(localStorage.getItem('flag-arena:config:v2')); if (__
           </select>
           <output class="config-valor" id="cfg-efeitoAnel-valor" for="cfg-efeitoAnel">Nenhum</output>
         </div>
+
+        <div class="config-linha">
+          <label class="config-nome" for="cfg-corParede">Cor da parede ao bater</label>
+          <select class="config-select" id="cfg-corParede">
+            <option value="nenhum">Nenhum</option>
+            <option value="caminha">Cor que caminha</option>
+            <option value="sorteia">Cor surpresa</option>
+            <option value="pisca">Lampejo</option>
+          </select>
+          <output class="config-valor" id="cfg-corParede-valor" for="cfg-corParede">Nenhum</output>
+        </div>
       </section>
 
       <section class="config-grupo" data-grupo="bandeiras">

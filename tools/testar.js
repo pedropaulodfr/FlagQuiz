@@ -115,6 +115,7 @@ const IDS_DA_TELA = [
   'cfg-modo', 'cfg-modo-valor',
   'cfg-obstaculo', 'cfg-obstaculo-valor',
   'cfg-efeitoAnel', 'cfg-efeitoAnel-valor',
+  'cfg-corParede', 'cfg-corParede-valor',
   'cfg-muralPosicao', 'cfg-muralPosicao-valor',
   'cfg-volume', 'cfg-volume-valor',
   'cfg-nomesVencedoras', 'cfg-nomesVencedoras-valor'
@@ -905,6 +906,37 @@ teste('bandeira fora do setor da abertura bate no anel e nao escapa', () => {
   falso(alvo.escapando, 'nao atravessa parede');
   const d = Math.hypot(alvo.x - e.cx, alvo.y - e.cy);
   verdadeiro(d <= e.raioJogador + 1e-6, 'o anel devolveu para dentro: ' + d);
+});
+
+teste('a cor da parede acende o anel na batida e some na onda nova', () => {
+  const anel = anelDeR(182);
+  const { jogo } = arenaDe(null, 1, { arenaAnelGiro: anel });
+  const e = jogo.estado;
+
+  /* encosta a primeira bandeira na parede pelo lado oposto ao portao e deixa bater */
+  function bater() {
+    const alvo = e.lutadores[0];
+    e.abertura = Math.PI;
+    alvo.x = e.cx;
+    alvo.y = e.cy - e.raioJogador;
+    alvo.vx = 0;
+    alvo.vy = -80;
+    anda(jogo, 200);
+  }
+
+  bater();
+  falso(/^hsl\(/.test(String(anel.style.stroke)), 'Nenhum nao pinta o anel');
+
+  jogo.CFG.corParede = 'caminha';
+  bater();
+  const primeira = String(anel.style.stroke);
+  verdadeiro(/^hsl\(/.test(primeira), 'o anel acendeu: ' + primeira);
+
+  bater();
+  verdadeiro(String(anel.style.stroke) !== primeira, 'a matiz caminha a cada batida');
+
+  jogo.reiniciar();
+  igual(anel.style.stroke, '', 'a onda nova apaga a cor da parede');
 });
 
 teste('o anel solido tambem trava quem bate pelo lado de dentro', () => {
@@ -2193,6 +2225,36 @@ teste('cada efeito do anel tem desenho proprio e nenhum encosta no anel que gira
   /* o efeito e' so' desenho: o anel que gira e a moldura continuam sem transform */
   falso(/transform\s*:/.test(blocoCss(lidos['styles.css'], '.arena-anel-giro')), 'o anel que gira nao ganhou transform');
   falso(/transform\s*:/.test(blocoCss(lidos['styles.css'], '.arena-anel')), 'o <svg> do anel nao ganhou transform');
+});
+
+/* ---------- cor da parede ---------- */
+
+teste('Config aplica a cor da parede no motor e cai em Nenhum se o valor for invalido', () => {
+  const s = arena();
+  const C = s.sandbox.Config;
+  C.aplicarNoMotor({ corParede: 'caminha' }, s.jogo);
+  igual(s.jogo.CFG.corParede, 'caminha', 'cor aplicada no motor');
+  C.aplicarNoMotor({ corParede: 'sorteia' }, s.jogo);
+  igual(s.jogo.CFG.corParede, 'sorteia', 'troca de cor');
+  C.aplicarNoMotor({ corParede: 'inexistente' }, s.jogo);
+  igual(s.jogo.CFG.corParede, 'nenhum', 'valor invalido vira o padrao');
+  igual(C.normalizar({}).corParede, 'nenhum', 'padrao');
+
+  const campo = C.campo('corParede');
+  igual(campo.opcoes[0].valor, 'nenhum', 'Nenhum e a primeira opcao');
+});
+
+teste('voltar a cor da parede para Nenhum apaga a cor que ficou no anel', () => {
+  const sb = montarContexto(1);
+  rodar(sb, ['js/config.js']);
+  const anel = criarElemento('circle');
+  anel.style = { stroke: 'hsl(120, 90%, 62%)' };
+  sb.Config.aplicarNoCena({ corParede: 'nenhum' }, { arenaAnelGiro: anel });
+  igual(anel.style.stroke, '', 'a cor do anel foi limpa');
+  /* trocar para uma cor ativa nao mexe no estilo: quem pinta e' o motor */
+  anel.style.stroke = 'hsl(10, 90%, 62%)';
+  sb.Config.aplicarNoCena({ corParede: 'caminha' }, { arenaAnelGiro: anel });
+  igual(anel.style.stroke, 'hsl(10, 90%, 62%)', 'a cena nao pinta a cor ativa');
 });
 
 teste('as duas paginas aplicam o tema e o efeito do anel salvos antes de pintar', () => {

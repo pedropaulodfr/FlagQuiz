@@ -229,6 +229,20 @@
       padrao: 'nenhum'
     },
     {
+      chave: 'corParede',
+      grupo: 'arena',
+      tipo: 'opcao',
+      rotulo: 'Cor da parede ao bater',
+      ajuda: 'A cada batida de uma bandeira na parede, o anel acende numa cor nova. Nenhum deixa o anel sempre com a cor do tema. Cor que caminha avanca a matiz a cada batida; Cor surpresa sorteia um tom; Lampejo acende um tom e apaga em seguida. So desenho: nao muda a fisica nem a abertura.',
+      opcoes: [
+        { valor: 'nenhum', texto: 'Nenhum' },
+        { valor: 'caminha', texto: 'Cor que caminha' },
+        { valor: 'sorteia', texto: 'Cor surpresa' },
+        { valor: 'pisca', texto: 'Lampejo' }
+      ],
+      padrao: 'nenhum'
+    },
+    {
       chave: 'muralPosicao',
       grupo: 'placar',
       tipo: 'opcao',
@@ -552,6 +566,7 @@
     motor.lutadoresIniciais = Math.round(c.lutadores);
     motor.raioBorda = c.anel / 100;
     motor.efeitoParede = c.efeitoParede;
+    motor.corParede = c.corParede;
     motor.vencedorasVoltam = c.vencedorasVoltam;
     motor.modo = c.modo;
     motor.obstaculo = c.obstaculo;
@@ -622,6 +637,10 @@
        pseudo-elementos do .arena (ver styles.css, "efeito do anel"). Nenhum nao
        casa nenhuma regra, por isso o padrao nao pinta nada. */
     if (el.raiz && el.raiz.setAttribute) el.raiz.setAttribute('data-efeito-anel', c.efeitoAnel);
+
+    /* a cor da parede ao bater e' pintada pelo motor a cada batida (game.js);
+       ao voltar para "nenhum", apaga a cor que tinha ficado no anel */
+    if (el.arenaAnelGiro && el.arenaAnelGiro.style && c.corParede === 'nenhum') el.arenaAnelGiro.style.stroke = '';
 
     varCss(el.raiz, '--anel-raio', c.anel + '%');
     varCss(el.raiz, '--arena-escala', String(c.arena));
