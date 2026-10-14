@@ -1757,7 +1757,7 @@ teste('obstaculos: "nenhum" e o padrao e cada tipo monta a quantidade certa', ()
   const { jogo } = arena();
   igual(jogo.CFG.obstaculo, 'nenhum', 'padrao');
   igual(jogo.estado.obstaculos.length, 0, 'nada na arena');
-  const esperado = { pino: 1, 'tres-pinos': 3, hexagono: 7, barra: 1, cruz: 2 };
+  const esperado = { pino: 1, 'tres-pinos': 3, hexagono: 7, barra: 1, cruz: 2, 'tres-cruzes': 6 };
   for (const tipo of Object.keys(esperado)) {
     jogo.CFG.obstaculo = tipo;
     jogo.definirTamanho(400);
@@ -1810,7 +1810,7 @@ teste('obstaculos: a barra gira e empurra pela superficie em movimento', () => {
 });
 
 teste('obstaculos: ninguem nasce dentro de um obstaculo', () => {
-  for (const tipo of ['pino', 'tres-pinos', 'hexagono', 'barra', 'cruz']) {
+  for (const tipo of ['pino', 'tres-pinos', 'hexagono', 'barra', 'cruz', 'tres-cruzes']) {
     const s = arena();
     s.jogo.CFG.obstaculo = tipo;
     s.jogo.definirTamanho(400);
@@ -1832,7 +1832,7 @@ teste('obstaculos: ninguem nasce dentro de um obstaculo', () => {
 });
 
 teste('obstaculos nao impedem a onda de terminar', () => {
-  for (const tipo of ['tres-pinos', 'cruz']) {
+  for (const tipo of ['tres-pinos', 'cruz', 'tres-cruzes']) {
     const s = arena();
     s.jogo.CFG.obstaculo = tipo;
     s.jogo.definirTamanho(400);

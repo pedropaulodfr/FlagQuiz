@@ -70,7 +70,7 @@ novo e a partida só acaba pelo **Número de rodadas** (0 = sem limite).
 - **Abertura:** é um trecho do anel sem parede. Escapa quem chega lá pela própria
   trajetória. Depois da primeira fuga da rodada, a abertura vira parede.
 - **Obstáculos:** opcionais, escolhidos nos Ajustes (pino, três pinos, hexágono,
-  barra ou cruz giratórias). Por padrão, nenhum.
+  barra, cruz ou três cruzes giratórias). Por padrão, nenhum.
 - **A campeã volta:** no modo "quem escapa vence", a vencedora da rodada anterior
   entra na próxima (se "Vencedoras voltam" estiver marcado).
 - **Duração estável em qualquer tela:** as velocidades são proporcionais ao lado

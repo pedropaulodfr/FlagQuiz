@@ -208,7 +208,8 @@
         { valor: 'tres-pinos', texto: 'Três pinos' },
         { valor: 'hexagono', texto: 'Pinos em hexágono' },
         { valor: 'barra', texto: 'Barra giratória' },
-        { valor: 'cruz', texto: 'Cruz giratória' }
+        { valor: 'cruz', texto: 'Cruz giratória' },
+        { valor: 'tres-cruzes', texto: 'Três cruzes giratórias' }
       ],
       padrao: 'nenhum'
     },

@@ -17,6 +17,7 @@ bandeiras se movem num círculo com uma abertura que gira; ver o `README.md`.
 | Pedido do usuário | Leia primeiro |
 | --- | --- |
 | Criar, adicionar ou alterar um **modo de jogo** | `.claude/skills/novo-modo-de-jogo/SKILL.md` |
+| Criar, adicionar ou alterar um **obstáculo** | `.claude/skills/novo-obstaculo/SKILL.md` |
 
 Siga o passo a passo da skill à risca: ela lista os arquivos e funções a alterar, as
 regras que não podem ser quebradas e os testes que devem acompanhar a mudança.

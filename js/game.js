@@ -362,7 +362,21 @@
       cruz: [
         { t: 'barra', x: 0, y: 0, meia: 0.17, r: 0.028, ang: 0, gira: true },
         { t: 'barra', x: 0, y: 0, meia: 0.17, r: 0.028, ang: Math.PI / 2, gira: true }
-      ]
+      ],
+      /* Tres cruzes (cada uma dois traços perpendiculares) em triangulo, cada
+         uma girando em torno do proprio centro. Afastadas o bastante para nao se
+         tocarem (centros a ~0,294 um do outro) e com braços menores que os da cruz
+         unica; o extremo fica a ~0,25 do centro, ainda folgado ate' o anel (~0,455). */
+      'tres-cruzes': (function () {
+        var barras = [];
+        for (var i = 0; i < 3; i++) {
+          var a = -Math.PI / 2 + i * 2 * Math.PI / 3;
+          var x = Math.cos(a) * 0.17, y = Math.sin(a) * 0.17;
+          barras.push({ t: 'barra', x: x, y: y, meia: 0.06, r: 0.02, ang: 0, gira: true });
+          barras.push({ t: 'barra', x: x, y: y, meia: 0.06, r: 0.02, ang: Math.PI / 2, gira: true });
+        }
+        return barras;
+      })()
     };
 
     function limparObstaculos() {
