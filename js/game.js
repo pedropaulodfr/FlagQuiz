@@ -88,6 +88,7 @@
     vencedorasVoltam: true,     /* false: quem ja venceu uma onda nao entra nas seguintes */
     efeitoParede: true,         /* desenha a onda de choque nas batidas na parede (so' visual) */
     corParede: 'nenhum',        /* pinta o anel numa cor nova a cada batida (ver pintarParede) */
+    efeitoObstaculo: 'nenhum',  /* 'aceso' pulsa no CSS; 'pisca' acende o obstaculo no impacto */
     /* folga do CENTRO do lutador ate o anel. Precisa acomodar a propria
        bandeira: com a folga antiga (0.055) os cantos do bloco passavam do
        anel em telas grandes, porque o centro podia chegar a 0.40 do lado e a
@@ -449,6 +450,7 @@
           base: m.ang || 0,
           ang: (m.ang || 0) + (m.gira ? giro : 0),
           gira: !!m.gira,
+          acesoAte: 0,            /* tempoOnda ate' quando o neon da batida fica aceso */
           el: null
         };
         if (el.obstaculos) {
@@ -505,6 +507,15 @@
        (elastico, restituicao 1). Sem forca extra: so' reflexao. */
     function colidirObstaculos() {
       if (!estado.obstaculos.length) return;
+      /* neon da batida: apaga quem ja' passou do tempo (so' a classe muda; o
+         desenho e' do CSS) antes de resolver as colisoes deste quadro */
+      for (var a = 0; a < estado.obstaculos.length; a++) {
+        var oa = estado.obstaculos[a];
+        if (oa.acesoAte && estado.tempoOnda >= oa.acesoAte) {
+          oa.acesoAte = 0;
+          if (oa.el && oa.el.classList) oa.el.classList.remove('obstaculo--acesa');
+        }
+      }
       var rf = estado.lado * CFG.diametroLutador / 2;
       for (var i = 0; i < estado.lutadores.length; i++) {
         var l = estado.lutadores[i];
@@ -525,8 +536,27 @@
             l.vx -= (1 + CFG.restituicaoParede) * rel * nx;
             l.vy -= (1 + CFG.restituicaoParede) * rel * ny;
             emitir('colisao', { forca: -rel / (estado.escala * CFG.velocidade) });
+            acenderObstaculo(o);
           }
         }
+      }
+    }
+
+    /* Neon no impacto (CFG.efeitoObstaculo === 'pisca'): o obstaculo ganha a
+       classe que o CSS anima; some sozinho quando passar a esquadria de tempo.
+       Puro desenho — nao mexe em velocidade nem posicao. */
+    function acenderObstaculo(o) {
+      if (CFG.efeitoObstaculo !== 'pisca' || !o.el || !o.el.classList) return;
+      o.acesoAte = estado.tempoOnda + 0.45;
+      o.el.classList.add('obstaculo--acesa');
+    }
+
+    /* Apaga o neon da batida de todos os obstaculos (comeco de onda). */
+    function limparObstaculosAcesos() {
+      for (var i = 0; i < estado.obstaculos.length; i++) {
+        var o = estado.obstaculos[i];
+        o.acesoAte = 0;
+        if (o.el && o.el.classList) o.el.classList.remove('obstaculo--acesa');
       }
     }
 
@@ -672,6 +702,7 @@
       estado.tempoOnda = 0;
       estado.resultado = null;
       limparParede();
+      limparObstaculosAcesos();
 
       var alvos = lotsAlvos();
       estado.refVel = fatorVel();
@@ -1171,6 +1202,7 @@ function linhaVencedora(linha, recente) {
       if (el.lutadores) el.lutadores.innerHTML = '';
       if (el.efeitos) el.efeitos.innerHTML = '';
       limparParede();
+      limparObstaculosAcesos();
       estado.resultado = null;
       if (el.fantasmasEscaparam) el.fantasmasEscaparam.innerHTML = '';
       pintarVencedoras();

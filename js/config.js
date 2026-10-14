@@ -243,6 +243,19 @@
       padrao: 'nenhum'
     },
     {
+      chave: 'efeitoObstaculo',
+      grupo: 'arena',
+      tipo: 'opcao',
+      rotulo: 'Efeito nos obstáculos',
+      ajuda: 'Neon nos obstáculos. Nenhum deixa como sempre foi. Neon aceso mantém um brilho pulsante na cor do tema; Neon no impacto acende o obstáculo no instante em que uma bandeira bate nele. So desenho: nao muda a fisica nem o rebote.',
+      opcoes: [
+        { valor: 'nenhum', texto: 'Nenhum' },
+        { valor: 'aceso', texto: 'Neon aceso' },
+        { valor: 'pisca', texto: 'Neon no impacto' }
+      ],
+      padrao: 'nenhum'
+    },
+    {
       chave: 'muralPosicao',
       grupo: 'placar',
       tipo: 'opcao',
@@ -567,6 +580,7 @@
     motor.raioBorda = c.anel / 100;
     motor.efeitoParede = c.efeitoParede;
     motor.corParede = c.corParede;
+    motor.efeitoObstaculo = c.efeitoObstaculo;
     motor.vencedorasVoltam = c.vencedorasVoltam;
     motor.modo = c.modo;
     motor.obstaculo = c.obstaculo;
@@ -637,6 +651,11 @@
        pseudo-elementos do .arena (ver styles.css, "efeito do anel"). Nenhum nao
        casa nenhuma regra, por isso o padrao nao pinta nada. */
     if (el.raiz && el.raiz.setAttribute) el.raiz.setAttribute('data-efeito-anel', c.efeitoAnel);
+
+    /* o neon dos obstaculos tambem e' so' um atributo no <html>: o CSS desenha
+       (ver styles.css, "neon dos obstaculos"). O motor so' acrescenta a classe
+       temporaria da batida quando o valor pede Neon no impacto. */
+    if (el.raiz && el.raiz.setAttribute) el.raiz.setAttribute('data-efeito-obstaculo', c.efeitoObstaculo);
 
     /* a cor da parede ao bater e' pintada pelo motor a cada batida (game.js);
        ao voltar para "nenhum", apaga a cor que tinha ficado no anel */

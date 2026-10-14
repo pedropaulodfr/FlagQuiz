@@ -116,6 +116,7 @@ const IDS_DA_TELA = [
   'cfg-obstaculo', 'cfg-obstaculo-valor',
   'cfg-efeitoAnel', 'cfg-efeitoAnel-valor',
   'cfg-corParede', 'cfg-corParede-valor',
+  'cfg-efeitoObstaculo', 'cfg-efeitoObstaculo-valor',
   'cfg-muralPosicao', 'cfg-muralPosicao-valor',
   'cfg-volume', 'cfg-volume-valor',
   'cfg-nomesVencedoras', 'cfg-nomesVencedoras-valor'
@@ -2257,13 +2258,96 @@ teste('voltar a cor da parede para Nenhum apaga a cor que ficou no anel', () => 
   igual(anel.style.stroke, 'hsl(10, 90%, 62%)', 'a cena nao pinta a cor ativa');
 });
 
-teste('as duas paginas aplicam o tema e o efeito do anel salvos antes de pintar', () => {
+/* ---------- neon dos obstaculos ---------- */
+
+teste('Config aplica o efeito nos obstaculos no <html> e cai em Nenhum se o valor for invalido', () => {
+  const sb = montarContexto(1);
+  rodar(sb, ['js/config.js']);
+  const raiz = criarElemento('html'); raiz.style = {};
+  sb.Config.aplicarNoCena({ efeitoObstaculo: 'aceso' }, { raiz });
+  igual(raiz.atributos['data-efeito-obstaculo'], 'aceso', 'efeito aplicado');
+  sb.Config.aplicarNoCena({ efeitoObstaculo: 'pisca' }, { raiz });
+  igual(raiz.atributos['data-efeito-obstaculo'], 'pisca', 'troca de efeito');
+  sb.Config.aplicarNoCena({ efeitoObstaculo: 'inexistente' }, { raiz });
+  igual(raiz.atributos['data-efeito-obstaculo'], 'nenhum', 'valor invalido vira o padrao');
+  igual(sb.Config.normalizar({}).efeitoObstaculo, 'nenhum', 'padrao');
+
+  const s = arena();
+  s.sandbox.Config.aplicarNoMotor({ efeitoObstaculo: 'pisca' }, s.jogo);
+  igual(s.jogo.CFG.efeitoObstaculo, 'pisca', 'o motor sabe quando acender na batida');
+});
+
+teste('cada efeito nos obstaculos tem desenho proprio e Nenhum nao pinta', () => {
+  const sb = montarContexto(1);
+  rodar(sb, ['js/config.js']);
+  const campo = sb.Config.campo('efeitoObstaculo');
+  const efeitos = campo.opcoes.map(o => o.valor);
+  igual(efeitos[0], 'nenhum', 'Nenhum e a primeira opcao');
+  igual(campo.padrao, 'nenhum', 'Nenhum e o padrao');
+
+  const css = lidos['styles.css'].replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const e of efeitos) {
+    if (e === 'nenhum') continue;
+    verdadeiro(css.indexOf(':root[data-efeito-obstaculo="' + e + '"]') !== -1, 'sem regra para o efeito ' + e);
+    verdadeiro(new RegExp(':root\\[data-efeito-obstaculo="' + e + '"\\][^{]*\\.obstaculo').test(css),
+      'o efeito ' + e + ' nao desenha no obstaculo');
+  }
+  /* Nenhum nao pinta nada: nenhuma regra casa quando o valor e o padrao */
+  verdadeiro(css.indexOf(':root[data-efeito-obstaculo="nenhum"]') === -1, 'Nenhum nao deve ter regra no CSS');
+
+  /* o neon e' so' desenho: o obstaculo continua sem transform na regra base */
+  falso(/transform\s*:/.test(blocoCss(lidos['styles.css'], '.obstaculo')), 'a regra base do obstaculo nao ganhou transform');
+});
+
+teste('neon no impacto acende o obstaculo na batida e apaga depois', () => {
+  const s = arenaDe(MANIFEST.slice(0, 2), 1, { obstaculos: criarElemento('div') });
+  const jogo = s.jogo;
+  jogo.CFG.obstaculo = 'pino';
+  jogo.definirTamanho(400);
+  jogo.CFG.efeitoObstaculo = 'pisca';
+  const e = jogo.estado;
+  const [a, b] = e.lutadores;
+  const pino = e.obstaculos[0];
+  /* a vem da esquerda rumo ao pino central; b fica parada longe, no canto */
+  a.x = e.cx - e.raioJogador * 0.8; a.y = e.cy; a.vx = 90; a.vy = 0;
+  b.x = e.cx + e.raioJogador * 0.7; b.y = e.cy + e.raioJogador * 0.5; b.vx = 0; b.vy = 0;
+  verdadeiro(pino.el, 'o pino tem elemento');
+  falso(pino.el.classList.contains('obstaculo--acesa'), 'comeca apagado');
+  let acendeu = false;
+  for (let i = 0; i < 80 && !acendeu; i++) {
+    anda(jogo, 16);
+    if (pino.el.classList.contains('obstaculo--acesa')) acendeu = true;
+  }
+  verdadeiro(acendeu, 'o pino acendeu na batida');
+  /* passada a esquadria de tempo, o neon apaga sozinho (sem tocar na fisica) */
+  anda(jogo, 600);
+  falso(pino.el.classList.contains('obstaculo--acesa'), 'o neon da batida apagou');
+});
+
+teste('o neon no impacto nao acende nada quando o efeito esta em Nenhum', () => {
+  const s = arenaDe(MANIFEST.slice(0, 2), 1, { obstaculos: criarElemento('div') });
+  const jogo = s.jogo;
+  jogo.CFG.obstaculo = 'pino';
+  jogo.definirTamanho(400);
+  const e = jogo.estado;
+  const [a, b] = e.lutadores;
+  const pino = e.obstaculos[0];
+  a.x = e.cx - e.raioJogador * 0.8; a.y = e.cy; a.vx = 90; a.vy = 0;
+  b.x = e.cx + e.raioJogador * 0.7; b.y = e.cy + e.raioJogador * 0.5; b.vx = 0; b.vy = 0;
+  for (let i = 0; i < 80; i++) {
+    anda(jogo, 16);
+    falso(pino.el.classList.contains('obstaculo--acesa'), 'acendeu mesmo com o efeito desligado');
+  }
+});
+
+teste('as duas paginas aplicam o tema e os efeitos salvos antes de pintar', () => {
   for (const arq of ['index.html', 'ajustes.html']) {
     const html = fs.readFileSync(path.join(raiz, arq), 'utf8');
     const cab = html.slice(0, html.indexOf('</head>'));
     verdadeiro(/localStorage\.getItem\('flag-arena:config:v2'\)/.test(cab), arq + ': le o tema no <head>');
     verdadeiro(/data-tema/.test(cab), arq + ': escreve data-tema no <head>');
     verdadeiro(/data-efeito-anel/.test(cab), arq + ': escreve data-efeito-anel no <head>');
+    verdadeiro(/data-efeito-obstaculo/.test(cab), arq + ': escreve data-efeito-obstaculo no <head>');
   }
   const sb = montarContexto(1);
   rodar(sb, ['js/config.js']);

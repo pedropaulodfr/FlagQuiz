@@ -627,6 +627,49 @@ body {
 }
 
 /* ---------------------------------------------------------------- */
+/* neon dos obstaculos                                              */
+/* ---------------------------------------------------------------- */
+/* Só desenho, ligado pelo atributo que os Ajustes escrevem no <html>
+   (data-efeito-obstaculo). A cor vem do tema (--obstaculo-glow-rgb) e o brilho
+   é um `filter: drop-shadow`, que se soma à sombra de cada material sem apagar
+   o relevo. "Nenhum" não casa nenhuma regra, por isso não pinta nada. Em Neon
+   no impacto, o motor acrescenta a classe temporária .obstaculo--acesa. */
+
+:root[data-efeito-obstaculo="aceso"] .obstaculo {
+  border-color: rgb(var(--obstaculo-glow-rgb));
+  animation: obstaculo-neon-pulso 1.8s ease-in-out infinite;
+}
+
+@keyframes obstaculo-neon-pulso {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(var(--obstaculo-glow-rgb), .85))
+            drop-shadow(0 0 12px rgba(var(--obstaculo-glow-rgb), .45));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(var(--obstaculo-glow-rgb), 1))
+            drop-shadow(0 0 20px rgba(var(--obstaculo-glow-rgb), .7));
+  }
+}
+
+:root[data-efeito-obstaculo="pisca"] .obstaculo.obstaculo--acesa {
+  border-color: rgb(var(--obstaculo-glow-rgb));
+  animation: obstaculo-neon-flash .45s ease-out;
+}
+
+@keyframes obstaculo-neon-flash {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(var(--obstaculo-glow-rgb), 0));
+  }
+  30% {
+    filter: drop-shadow(0 0 7px rgba(var(--obstaculo-glow-rgb), 1))
+            drop-shadow(0 0 18px rgba(var(--obstaculo-glow-rgb), .75));
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(var(--obstaculo-glow-rgb), 0));
+  }
+}
+
+/* ---------------------------------------------------------------- */
 /* lutadores                                                        */
 /* ---------------------------------------------------------------- */
 
@@ -1777,6 +1820,8 @@ html:has(body.pagina-ajustes) { height: auto; }
   .efeitos { display: none; }
   :root[data-efeito-anel] .arena::before,
   :root[data-efeito-anel] .arena::after { animation: none; }
+  :root[data-efeito-obstaculo] .obstaculo,
+  :root[data-efeito-obstaculo] .obstaculo.obstaculo--acesa { animation: none; }
   .aviso-cartao { animation: none; }
   .vencedora--recente { animation: none; }
   .config-pagina { animation: none; }
